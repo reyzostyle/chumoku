@@ -28,3 +28,6 @@ dist-extension
 
 # Local look-at-it harness (mocked sign-in), never shipped
 .preview/
+
+# Supabase CLI cache (pooler URL, project ref), local only
+supabase/.temp/
