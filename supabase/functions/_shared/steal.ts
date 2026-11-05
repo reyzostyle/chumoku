@@ -1,6 +1,7 @@
 import { callLLM } from './llm.ts';
 import { watchVideo } from './analyze-video.ts';
 import { parseModelJson } from './json.ts';
+import { platformOf, videoSource } from './social.ts';
 
 // The two model passes behind taking someone else's Short and making it yours:
 // read what the video is and adapt it (enrich-competitor-video), then watch it
@@ -22,6 +23,8 @@ export function stripDashes(s: unknown): unknown {
 }
 
 export async function fetchTranscript(videoId: string): Promise<string> {
+  // Captions are a YouTube read. Without them the callers watch the video.
+  if (platformOf(videoId) !== 'youtube') return '';
   try {
     const res = await fetch(
       `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
@@ -114,7 +117,7 @@ Rules:
   const content = transcript
     ? await callLLM(prompt, { maxTokens: 1400, tier: 'writer' })
     : await watchVideo(
-        { fileUri: `https://www.youtube.com/watch?v=${videoId}`, mimeType: 'video/mp4' },
+        await videoSource(videoId),
         prompt,
         { maxTokens: 4096 },
       );
@@ -205,7 +208,7 @@ Rules:
 - Respond with JSON only, no markdown`;
 
   const content = await watchVideo(
-    { fileUri: `https://www.youtube.com/watch?v=${videoId}`, mimeType: 'video/mp4' },
+    await videoSource(videoId),
     prompt,
     // Roomy: a truncated outline is a total loss, and the request is already
     // paid for by the time the model starts writing.

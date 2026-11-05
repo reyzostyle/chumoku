@@ -1,6 +1,6 @@
 import { corsHeaders } from '../_shared/http.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
-import { syncChannelPool } from '../_shared/channel-pool.ts';
+import { syncChannelPool, isSocial, SOCIAL_SYNC_TTL_MS } from '../_shared/channel-pool.ts';
 
 const CORS = corsHeaders({ methods: 'GET, POST, PUT, DELETE, OPTIONS' });
 
@@ -92,7 +92,8 @@ Deno.serve(async (req: Request) => {
 
     for (const channel of channels) {
       const last = syncedAt.get(channel.channel_id);
-      if (last && Date.now() - last < CHANNEL_SYNC_TTL_MS) continue;
+      const ttl = isSocial(channel.channel_id) ? SOCIAL_SYNC_TTL_MS : CHANNEL_SYNC_TTL_MS;
+      if (last && Date.now() - last < ttl) continue;
 
       try {
         await syncChannelPool(supabase, channel.channel_id, channel.channel_name, ytApiKey);
@@ -121,7 +122,7 @@ Deno.serve(async (req: Request) => {
         videos: videos || [],
         refreshed,
         message: failures.length
-          ? `Could not reach YouTube for ${failures.join(', ')}. The rest is up to date.`
+          ? `Could not reach ${failures.join(', ')}. The rest is up to date.`
           : refreshed === 0
             ? 'Already up to date. Competitor channels refresh at most once an hour.'
             : undefined,

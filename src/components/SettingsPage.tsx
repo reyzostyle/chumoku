@@ -12,6 +12,7 @@ import { formatViews } from '../lib/competitors';
 import { useUsage } from '../lib/useUsage';
 import { startTopup, CREDIT_PACK } from './CreditsPanel';
 import { ChannelsSettings } from './ChannelsSettings';
+import { SocialProfiles } from './SocialProfiles';
 import { RetentionLessons } from './RetentionLessons';
 
 function YouTubeLogo({ className }: { className?: string }) {
@@ -669,6 +670,11 @@ export function SettingsPage() {
             )}
           </div>
         )}
+      </Fold>
+
+      {/* ── TikTok and Instagram ── */}
+      <Fold {...cardProps('social')} title="TikTok and Instagram">
+        {openCard === 'social' && <SocialProfiles />}
       </Fold>
 
       {/* ── Competitor channels ── */}

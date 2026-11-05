@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/http.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { fetchProfile, parseProfile, storeThumbnails, thumbUrl } from '../_shared/social.ts';
 
 const CORS = corsHeaders({ methods: 'GET, POST, PUT, DELETE, OPTIONS' });
 
@@ -164,13 +165,18 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log('[add-competitor-channel] Resolving channel:', channelUrl);
-    const { channelId, channelName, channelThumbnail } = await resolveChannelId(channelUrl, ytApiKey);
+    const social = parseProfile(channelUrl);
+    const socialProfile = social ? await fetchProfile(social.platform, social.handle) : null;
+    if (socialProfile) await storeThumbnails(supabase, [{ videoId: socialProfile.channelId, thumbnail: socialProfile.avatar }]);
+    const { channelId, channelName, channelThumbnail } = socialProfile
+      ? { channelId: socialProfile.channelId, channelName: socialProfile.name, channelThumbnail: thumbUrl(socialProfile.channelId) }
+      : await resolveChannelId(channelUrl, ytApiKey);
     console.log('[add-competitor-channel] Resolved:', channelId, channelName);
 
     const { data: inserted, error: insertError } = await supabase
       .from('competitor_channels')
       .upsert(
-        { user_id: userId, channel_id: channelId, channel_url: channelUrl, channel_title: channelName, thumbnail_url: channelThumbnail },
+        { user_id: userId, channel_id: channelId, channel_url: channelUrl, channel_title: channelName, channel_name: channelName, thumbnail_url: channelThumbnail },
         { onConflict: 'user_id,channel_id' }
       )
       .select()

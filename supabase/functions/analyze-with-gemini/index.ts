@@ -1,6 +1,7 @@
 import { loadLanguage } from '../_shared/language.ts';
 import { corsHeaders } from '../_shared/http.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { fetchVideo, platformOf, videoLink, videoSource } from '../_shared/social.ts';
 import { loadCreditStatus, canAfford, spendCredits, CREDIT_COSTS } from '../_shared/credits.ts';
 import { analyzeVideo } from '../_shared/analyze-video.ts';
 import { parseImages, type AttachedImage } from '../_shared/images.ts';
@@ -147,6 +148,11 @@ Deno.serve(async (req: Request) => {
 
     let video = ownVideo;
 
+    const social = platformOf(videoId) !== 'youtube' ? await fetchVideo(videoLink(videoId)).catch(() => null) : null;
+    if (social) {
+      video = { video_id: videoId, title: social.title, views: social.views, likes_count: null, comment_count: null, duration: social.duration, published_at: social.publishedAt };
+    }
+
     if (!video) {
       console.log('[analyze-with-gemini] External video — fetching public stats via API key...');
       const ytApiKey = Deno.env.get('YOUTUBE_API_KEY');
@@ -250,7 +256,7 @@ Deno.serve(async (req: Request) => {
     // One pass: the same model watches the video and writes the verdict.
     console.log('[analyze-with-gemini] Analyzing video...');
     const analysis = await analyzeVideo(
-      { fileUri: `https://www.youtube.com/watch?v=${videoId}`, mimeType: 'video/mp4' },
+      await videoSource(videoId),
       video, profile, videoContext, supabase, profile.creator_level, images,
     );
     console.log('[analyze-with-gemini] Done, transcript length:', analysis.transcript?.length);

@@ -27,7 +27,7 @@ export type Intent = 'analyze' | 'steal' | 'share';
 // `text` rather than `url`. Pull out the first YouTube link from any of it.
 export function findYouTubeLink(s: string | null | undefined): string | null {
   if (!s) return null;
-  const m = s.match(/https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/[^\s]+/i);
+  const m = s.match(/https?:\/\/(?:[\w-]+\.)?(?:youtube\.com|youtu\.be|tiktok\.com|instagram\.com)\/[^\s]+/i);
   return m ? m[0] : null;
 }
 

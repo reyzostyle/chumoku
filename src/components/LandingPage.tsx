@@ -694,7 +694,7 @@ export function LandingPage() {
   const looksLikeVideoLink = (url: string) => {
     const t = url.trim();
     if (/^[a-zA-Z0-9_-]{11}$/.test(t)) return true;
-    return /[?&]v=([^&]+)/.test(t) || /shorts\/([^?&/\n]+)/.test(t) || /youtu\.be\/([^?&/\n]+)/.test(t);
+    return /[?&]v=([^&]+)/.test(t) || /shorts\/([^?&/\n]+)/.test(t) || /youtu\.be\/([^?&/\n]+)/.test(t) || /tiktok\.com\//i.test(t) || /instagram\.com\/(?:reels?|p)\//i.test(t);
   };
 
   // This page only ever renders for guests (App.tsx routes anyone with a
@@ -707,7 +707,7 @@ export function LandingPage() {
     const trimmed = heroUrl.trim();
     if (!trimmed) return;
     if (!looksLikeVideoLink(trimmed)) {
-      setHeroError('That does not look like a Short. Paste a link like youtube.com/shorts/...');
+      setHeroError('That does not look like a Short. Paste a YouTube, TikTok or Instagram link.');
       return;
     }
     setHeroError('');

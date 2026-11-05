@@ -68,7 +68,7 @@ export function CompetitorsChannels({
             type="text"
             value={channelUrl}
             onChange={e => setChannelUrl(e.target.value)}
-            placeholder="youtube.com/@channelname"
+            placeholder="YouTube, TikTok or Instagram link"
             disabled={addingChannel || channels.length >= channelLimit}
             className="flex-1 px-3 py-2.5 rounded-[var(--r-sm)] text-sm focus:outline-none disabled:opacity-50"
             style={{ background: 'var(--bg-app)', border: '1px solid var(--line)', color: 'var(--text)' }}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { isSocialId, socialIdFrom } from '../lib/videoLinks';
 import {
   AddOutlineIcon as Plus, ArrowUpOutlineIcon as ArrowUp,
   CloseCircleOutlineIcon as X, ClapperboardOpenOutlineIcon as Film, GalleryOutlineIcon as ImageIcon,
@@ -41,6 +42,8 @@ interface Message {
 }
 
 const extractVideoId = (input: string): string | null => {
+  const social = socialIdFrom(input);
+  if (social) return social;
   const s = input.trim();
   if (/^[\w-]{11}$/.test(s)) return s;
   return s.match(/(?:shorts\/|v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1] ?? null;
@@ -722,8 +725,10 @@ export function AnalysisChat() {
 
     let title = '';
     try {
-      const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-      if (r.ok) title = (await r.json()).title ?? '';
+      if (!isSocialId(videoId)) {
+        const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+        if (r.ok) title = (await r.json()).title ?? '';
+      }
     } catch { /* title is a nicety, not a requirement */ }
 
     // Stop pressed while the title was being fetched. Bail before a thread is

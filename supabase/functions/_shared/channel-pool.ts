@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { BASELINE_SIZE, MIN_BASELINE, BASELINE_MIN_AGE_DAYS, isShort, median, ageDays, roundScore } from './channel-baseline.ts';
+import { fetchRecentVideos, platformOf, storeThumbnails, type Platform } from './social.ts';
 
 // Building one channel's slice of the shared competitor pool: which of its
 // last fifty Shorts beat its own median, and by how much. Lives here because
@@ -23,6 +24,13 @@ import { BASELINE_SIZE, MIN_BASELINE, BASELINE_MIN_AGE_DAYS, isShort, median, ag
 export const OUTLIER_THRESHOLD = 1.5; // times the channel's median views
 export const POOL_PER_CHANNEL = 30;   // how deep the pool goes per channel
 
+// YouTube reads are free, so its channels can refresh hourly. A TikTok or
+// Instagram channel costs three paid requests, and an outlier takes days to
+// show anyway.
+export const SOCIAL_SYNC_TTL_MS = 48 * 60 * 60 * 1000;
+const SOCIAL_BASELINE_MIN_AGE_DAYS = 2;
+export const isSocial = (channelId: string) => platformOf(channelId) !== 'youtube';
+
 // English only. Auto-find pulled in a Portuguese channel and its videos landed
 // in the feed, which is worse than useless: an idea you cannot read is an idea
 // you cannot adapt. Videos that declare no language at all are KEPT - plenty of
@@ -42,12 +50,26 @@ export interface PoolVideo {
   views: number;
   publishedAt: string;
   outlierScore: number | null;
+  thumbnail?: string | null;
+}
+
+// A TikTok or Instagram account by its id, "tiktok:handle". Same output as the
+// YouTube read below: from here on the pool does not care where a video is from.
+async function socialShorts(channelId: string) {
+  const handle = channelId.slice(channelId.indexOf(':') + 1);
+  const videos = await fetchRecentVideos(platformOf(channelId) as Platform, handle);
+  return videos
+    .filter(v => v.duration == null || v.duration <= 180)
+    .filter(v => !v.language || v.language.startsWith('en'))
+    .map(v => ({ videoId: v.videoId, title: v.title, views: v.views, publishedAt: v.publishedAt, thumbnail: v.thumbnail }));
 }
 
 export async function fetchChannelPool(
   channelId: string,
   ytApiKey: string,
 ): Promise<{ videos: PoolVideo[]; medianViews: number }> {
+  if (isSocial(channelId)) return scorePool(await socialShorts(channelId), SOCIAL_BASELINE_MIN_AGE_DAYS);
+
   const channelRes = await fetch(
     `https://www.googleapis.com/youtube/v3/channels?id=${channelId}&part=contentDetails&key=${ytApiKey}`
   );
@@ -86,9 +108,17 @@ export async function fetchChannelPool(
     }))
     .filter((v: any) => v.publishedAt);
 
+  return scorePool(shorts);
+}
+
+function scorePool(shorts: any[], minAgeDays = BASELINE_MIN_AGE_DAYS): { videos: PoolVideo[]; medianViews: number } {
   // What "normal" means for this channel is decided by videos that have
   // finished performing. What gets SHOWN is every short, measured against that.
-  const baseline = shorts.filter((v: any) => ageDays(v.publishedAt) >= BASELINE_MIN_AGE_DAYS);
+  let baseline = shorts.filter((v: any) => ageDays(v.publishedAt) >= minAgeDays);
+  // Three pages of a daily poster can all be days old, which left no baseline
+  // at all (@garyvee on TikTok). Fresh views understate, which only makes the
+  // bar lower: better than never scoring the account.
+  if (minAgeDays < BASELINE_MIN_AGE_DAYS && baseline.length < MIN_BASELINE) baseline = shorts;
 
   if (shorts.length === 0) return { videos: [], medianViews: 0 };
 
@@ -102,7 +132,7 @@ export async function fetchChannelPool(
       .slice(0, POOL_PER_CHANNEL)
       .map((v: any) => ({
         videoId: v.videoId, title: v.title, views: v.views,
-        publishedAt: v.publishedAt, outlierScore: null,
+        publishedAt: v.publishedAt, outlierScore: null, thumbnail: v.thumbnail,
       }));
     return { videos: recent, medianViews: 0 };
   }
@@ -123,6 +153,7 @@ export async function fetchChannelPool(
       views: v.views,
       publishedAt: v.publishedAt,
       outlierScore: roundScore(v.outlierScore),
+      thumbnail: v.thumbnail,
     }));
 
   return { videos, medianViews };
@@ -147,6 +178,10 @@ export async function syncChannelPool(
   const { data: pooled } = await supabase
     .from('competitor_videos').select('video_id').eq('channel_id', channelId);
   const stale = (pooled ?? []).map((r: any) => r.video_id).filter((id: string) => !keep.has(id));
+  if (isSocial(channelId)) {
+    const have = new Set((pooled ?? []).map((r: any) => r.video_id));
+    await storeThumbnails(supabase, result.videos.filter(v => !have.has(v.videoId)));
+  }
   if (stale.length) {
     await supabase.from('competitor_videos').delete().in('video_id', stale);
   }

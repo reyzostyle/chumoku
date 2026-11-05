@@ -26,7 +26,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Does it work for TikTok or Reels?',
-    a: 'No, YouTube Shorts only. That focus is what keeps the advice specific.',
+    a: 'Yes. Follow TikTok and Instagram accounts next to YouTube channels, and add your own to see what worked for you.',
   },
   {
     q: 'What does the extension do?',

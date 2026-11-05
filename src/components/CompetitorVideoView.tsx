@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { watchUrl } from '../lib/videoLinks';
 import { AltArrowLeftOutlineIcon as ArrowLeft, SquareArrowRightUpOutlineIcon as ExternalLink } from '@solar-icons/react';
 import { ShortThumb } from './ShortThumb';
 import { formatViews, isOwnIdea, isOwnRemix, ownIdeaLabel, type FeedItem, type CompetitorIdea } from '../lib/competitors';
@@ -85,7 +86,7 @@ export function CompetitorVideoView({
           <p className="t-label mb-3" style={{ color: 'var(--text-muted)' }}>
             {[item.channel_name, item.video_views != null ? `${formatViews(item.video_views)} views` : null].filter(Boolean).join(' · ')}
             {' · '}
-            <a href={`https://www.youtube.com/watch?v=${item.video_id}`} target="_blank" rel="noopener noreferrer"
+            <a href={watchUrl(item.video_id)} target="_blank" rel="noopener noreferrer"
                className="inline-flex items-center gap-1 transition-colors hover:text-[var(--text)]">
               watch <ExternalLink className="w-3 h-3" />
             </a>

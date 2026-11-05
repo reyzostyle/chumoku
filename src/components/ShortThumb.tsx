@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { isSocialId, socialThumb } from '../lib/videoLinks';
 
 // A Short's cover at a resolution that survives the crop.
 //
@@ -18,12 +19,14 @@ import { useState, useCallback } from 'react';
 const maxres = (id: string) => `https://i.ytimg.com/vi_webp/${id}/maxresdefault.webp`;
 const hq = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 
-export function ShortThumb({ videoId, src, eager }: {
+export function ShortThumb({ videoId, src: given, eager }: {
   videoId: string;
   // A pre-cropped 4:5 image (the landing's), used as-is.
   src?: string;
   eager?: boolean;
 }) {
+  // A TikTok or Reel cover is already a full vertical frame, used as-is.
+  const src = given ?? (isSocialId(videoId) ? socialThumb(videoId) : undefined);
   const [fallback, setFallback] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const url = src ?? (fallback ? hq(videoId) : maxres(videoId));

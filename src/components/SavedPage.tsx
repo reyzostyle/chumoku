@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { isSocialId, socialThumb } from '../lib/videoLinks';
 import { ArrowRightUpOutlineIcon as ArrowUpRight, PenNewSquareOutlineIcon as Pen } from '@solar-icons/react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -50,7 +51,7 @@ export function SavedPage() {
                   <Pen className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
                 ) : (
                   <img
-                    src={idea.video_thumbnail || `https://i.ytimg.com/vi/${idea.video_id}/sddefault.jpg`}
+                    src={idea.video_thumbnail || (isSocialId(idea.video_id) ? socialThumb(idea.video_id) : `https://i.ytimg.com/vi/${idea.video_id}/sddefault.jpg`)}
                     alt=""
                     className="w-full h-full object-cover rounded-[11px]"
                     // A Short's thumbnail is letterboxed; this scales the bars out.

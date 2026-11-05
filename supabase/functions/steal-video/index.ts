@@ -2,6 +2,8 @@ import { languageRule, loadLanguage } from '../_shared/language.ts';
 import { corsHeaders } from '../_shared/http.ts';
 import { loadVoiceBlock } from '../_shared/voice.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { channelIdOf, fetchVideo, parseVideoLink, storeThumbnails, thumbUrl } from '../_shared/social.ts';
+import { syncChannelPool } from '../_shared/channel-pool.ts';
 import { loadCreditStatus, canAfford, spendCredits, CREDIT_COSTS } from '../_shared/credits.ts';
 import { loadChannelScan, channelScanBlock } from '../_shared/channel-scan.ts';
 import { loadBrain, brainBlock } from '../_shared/brain.ts';
@@ -45,6 +47,18 @@ export function parseVideoId(input: string): string | null {
   return m ? m[1] : null;
 }
 
+// The account's usual views, from the pool when it has been read, otherwise read
+// now: three paid requests that also leave it in the pool for the next steal.
+async function socialMedian(supabase: any, channelId: string): Promise<number | null> {
+  const { data } = await supabase
+    .from('competitor_channel_pool').select('median_views').eq('channel_id', channelId).maybeSingle();
+  if (data?.median_views) return data.median_views;
+  await syncChannelPool(supabase, channelId, null, '');
+  const { data: fresh } = await supabase
+    .from('competitor_channel_pool').select('median_views').eq('channel_id', channelId).maybeSingle();
+  return fresh?.median_views || null;
+}
+
 function isoSeconds(iso: string): number {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!m) return 0;
@@ -67,8 +81,11 @@ Deno.serve(async (req: Request) => {
     if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
     const { url } = await req.json().catch(() => ({}));
-    const videoId = typeof url === 'string' ? parseVideoId(url) : null;
-    if (!videoId) return json({ error: "That doesn't look like a YouTube Short link." }, 400);
+    const socialLink = typeof url === 'string' ? parseVideoLink(url) : null;
+    const social = socialLink ? await fetchVideo(socialLink).catch(() => null) : null;
+    if (socialLink && !social) return json({ error: "Couldn't find that video. It may be private or deleted." }, 404);
+    const videoId = social?.videoId ?? (typeof url === 'string' ? parseVideoId(url) : null);
+    if (!videoId) return json({ error: "That doesn't look like a link to a Short, TikTok or Reel." }, 400);
 
     // Stolen before. Hand back what is stored; charge only for the half that
     // is missing, so a video opened in the feed and read there (concept, no
@@ -89,30 +106,48 @@ Deno.serve(async (req: Request) => {
     const creditStatus = await loadCreditStatus(supabase, user.id);
     if (!canAfford(creditStatus, cost, isAdmin)) return json({ error: 'limit_reached', cost });
 
-    // Public facts about the video. One cheap Data API read; it also tells us
-    // the video exists and is short enough to be worth watching.
-    const apiKey = Deno.env.get('YOUTUBE_API_KEY');
-    if (!apiKey) throw new Error('YOUTUBE_API_KEY is not set');
-    const ytRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId}&key=${apiKey}`,
-    );
-    if (!ytRes.ok) throw new Error(`YouTube lookup failed (${ytRes.status})`);
-    const video = (await ytRes.json()).items?.[0];
-    if (!video) return json({ error: "Couldn't find that video. It may be private or deleted." }, 404);
-    if (isoSeconds(video.contentDetails?.duration || '') > MAX_SECONDS) {
-      return json({ error: 'Steal works on Shorts. That video is longer than three minutes.' }, 400);
+    // Public facts about the video. It also tells us the video exists and is
+    // short enough to be worth watching.
+    let title = '', views = 0, channelId = '', channelName = '', thumbnail: string | null = null, publishedAt: string | null = null;
+    let medianPromise: Promise<number | null> = Promise.resolve(null);
+    if (social) {
+      if ((social.duration ?? 0) > MAX_SECONDS) {
+        return json({ error: 'Steal works on short videos. That one is longer than three minutes.' }, 400);
+      }
+      title = social.title;
+      views = social.views;
+      channelId = social.handle ? channelIdOf(social.platform, social.handle) : '';
+      channelName = social.handle ? `@${social.handle}` : '';
+      publishedAt = social.publishedAt;
+      await storeThumbnails(supabase, [social]);
+      thumbnail = thumbUrl(social.videoId);
+      medianPromise = channelId ? socialMedian(supabase, channelId).catch(() => null) : medianPromise;
+    } else {
+      const apiKey = Deno.env.get('YOUTUBE_API_KEY');
+      if (!apiKey) throw new Error('YOUTUBE_API_KEY is not set');
+      const ytRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId}&key=${apiKey}`,
+      );
+      if (!ytRes.ok) throw new Error(`YouTube lookup failed (${ytRes.status})`);
+      const video = (await ytRes.json()).items?.[0];
+      if (!video) return json({ error: "Couldn't find that video. It may be private or deleted." }, 404);
+      if (isoSeconds(video.contentDetails?.duration || '') > MAX_SECONDS) {
+        return json({ error: 'Steal works on Shorts. That video is longer than three minutes.' }, 400);
+      }
+
+      title = video.snippet?.title || '';
+      views = Number(video.statistics?.viewCount || 0);
+      channelId = video.snippet?.channelId || '';
+      channelName = video.snippet?.channelTitle || '';
+      thumbnail = video.snippet?.thumbnails?.high?.url || video.snippet?.thumbnails?.default?.url || null;
+      publishedAt = video.snippet?.publishedAt || null;
+
+      // How far this Short beat its own channel: the number the steal card leads
+      // with. Started now, read after the profile loads, so it costs no extra
+      // wait. A row the feed already scored keeps its score if this comes back
+      // empty (too little history, or the API said no).
+      medianPromise = channelId ? channelShortsMedian(channelId, apiKey).catch(() => null) : medianPromise;
     }
-
-    const title: string = video.snippet?.title || '';
-    const views = Number(video.statistics?.viewCount || 0);
-    const channelId: string = video.snippet?.channelId || '';
-    const channelName: string = video.snippet?.channelTitle || '';
-
-    // How far this Short beat its own channel: the number the steal card leads
-    // with. Started now, read after the profile loads, so it costs no extra
-    // wait. A row the feed already scored keeps its score if this comes back
-    // empty (too little history, or the API said no).
-    const medianPromise = channelId ? channelShortsMedian(channelId, apiKey).catch(() => null) : Promise.resolve(null);
 
     // Same profile the feed adapts against: the brain if built, the four typed
     // boxes if not. A steal is always adapted - adapting is the point of it.
@@ -151,10 +186,10 @@ Extra context: ${profile?.channel_context || 'not set'}`;
         channel_name: channelName,
         video_id: videoId,
         video_title: title,
-        video_thumbnail: video.snippet?.thumbnails?.high?.url || video.snippet?.thumbnails?.default?.url || null,
+        video_thumbnail: thumbnail,
         video_views: views,
         outlier_score: outlierScore,
-        video_published_at: video.snippet?.publishedAt || null,
+        video_published_at: publishedAt,
         concept,
         adapted_idea: adaptedIdea,
         outline,

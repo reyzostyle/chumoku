@@ -80,11 +80,27 @@ nonisolated struct Idea: Codable, Identifiable, Hashable {
 
     var isOwn: Bool { source == "ai" }
 
+    // TikTok and Instagram ids carry their platform; their covers are in our
+    // own storage because the platforms' links expire.
+    private var isSocial: Bool { videoId.hasPrefix("tiktok:") || videoId.hasPrefix("instagram:") }
+
     var thumbnailURL: URL? {
-        isOwn ? nil : URL(string: videoThumbnail ?? "https://i.ytimg.com/vi/\(videoId)/sddefault.jpg")
+        if isOwn { return nil }
+        if let videoThumbnail { return URL(string: videoThumbnail) }
+        if isSocial {
+            let name = videoId.replacingOccurrences(of: ":", with: "-")
+            return URL(string: "https://ezlousklksipvwuinpzq.supabase.co/storage/v1/object/public/social-thumbs/\(name).jpg")
+        }
+        return URL(string: "https://i.ytimg.com/vi/\(videoId)/sddefault.jpg")
     }
 
-    var shortsURL: URL? { isOwn ? nil : URL(string: "https://www.youtube.com/shorts/\(videoId)") }
+    var shortsURL: URL? {
+        if isOwn { return nil }
+        let native = videoId.split(separator: ":").last.map(String.init) ?? videoId
+        if videoId.hasPrefix("tiktok:") { return URL(string: "https://www.tiktok.com/@_/video/\(native)") }
+        if videoId.hasPrefix("instagram:") { return URL(string: "https://www.instagram.com/reel/\(native)/") }
+        return URL(string: "https://www.youtube.com/shorts/\(videoId)")
+    }
 
     // "14×": how far it beat its own channel, the number the feed is sorted by.
     // The web shows one decimal under 10 ("3.9×").

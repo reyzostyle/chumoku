@@ -60,7 +60,7 @@ struct ChannelsSection: View {
                 }
                 if channels.count < limit {
                     HStack(spacing: 8) {
-                        TextField("", text: $link, prompt: Text("youtube.com/@channel").foregroundStyle(Color.textFaint))
+                        TextField("", text: $link, prompt: Text("YouTube, TikTok or Instagram link").foregroundStyle(Color.textFaint))
                             .font(.tBody).foregroundStyle(Color.text)
                             .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                             .submitLabel(.done)

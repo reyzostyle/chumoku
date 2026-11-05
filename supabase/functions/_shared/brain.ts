@@ -43,6 +43,9 @@ export interface ChannelBrain {
   // weekly rebuild can never wipe it and every prompt that takes the brain
   // gets it.
   retention?: RetentionLessons | null;
+  // How their TikToks and Reels did against their usual (user_tokens.
+  // social_summary). Attached on load like retention, not part of the stored read.
+  social?: string | null;
 }
 
 // The niche vocabulary, moved here from src/lib/niches.ts when the chips came
@@ -82,7 +85,7 @@ ${titles ? `Their last ${scan.videos.length} uploads, newest first:\n${titles}` 
 export async function buildBrain(supabase: any, userId: string): Promise<ChannelBrain | null> {
   const { data: row } = await supabase
     .from('user_tokens')
-    .select('creator_level, channel_description, channel_niche, target_audience, channel_context, brain, brain_overrides, retention_lessons')
+    .select('social_summary, creator_level, channel_description, channel_niche, target_audience, channel_context, brain, brain_overrides, retention_lessons')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -117,7 +120,7 @@ export async function buildBrain(supabase: any, userId: string): Promise<Channel
 
   const level = (row?.creator_level as string) || 'intermediate';
 
-  if (!scan && stated.startsWith('They wrote nothing')) return null;
+  if (!scan && !row?.social_summary && stated.startsWith('They wrote nothing')) return null;
 
   const prompt = `You are building the working profile of one short-form creator. Everything this product later writes for them - competitor ideas remade for their channel, outlines, hook rewrites - is written against this profile, so it has to describe the channel that exists, not the one they hope to run.
 
@@ -127,7 +130,7 @@ ${stated}
 
 ## What they actually publish
 ${scanEvidence(scan)}
-${bestTitles ? `\nTheir most viewed videos of all time:\n${bestTitles}\n` : ''}${retentionEvidence(row?.retention_lessons as RetentionLessons | null)}${previous?.summary ? `
+${bestTitles ? `\nTheir most viewed videos of all time:\n${bestTitles}\n` : ''}${row?.social_summary ? `\n## How their TikToks and Reels did\n${row.social_summary}\n` : ''}${retentionEvidence(row?.retention_lessons as RetentionLessons | null)}${previous?.summary ? `
 ## The previous read (last week)
 ${previous.summary}
 Niche: ${previous.niche} | Format: ${previous.format}
@@ -208,10 +211,15 @@ export function mergeBrain(brain: ChannelBrain | null, overrides: BrainOverrides
 // deno-lint-ignore no-explicit-any
 export async function loadBrain(supabase: any, userId: string): Promise<ChannelBrain | null> {
   const { data } = await supabase
-    .from('user_tokens').select('brain, brain_overrides, retention_lessons').eq('user_id', userId).maybeSingle();
+    .from('user_tokens').select('brain, brain_overrides, retention_lessons, social_summary').eq('user_id', userId).maybeSingle();
   const brain = mergeBrain((data?.brain as ChannelBrain) ?? null, (data?.brain_overrides as BrainOverrides) ?? null);
   const lessons = data?.retention_lessons as RetentionLessons | null;
-  return brain && lessons?.lessons?.length ? { ...brain, retention: lessons } : brain;
+  if (!brain) return brain;
+  return {
+    ...brain,
+    retention: lessons?.lessons?.length ? lessons : brain.retention,
+    social: data?.social_summary ?? null,
+  };
 }
 
 // For the brain's own read: the retention lessons are evidence about what
@@ -253,7 +261,7 @@ ${brain.strengths.length ? `\nWhat already works for them:\n${list(brain.strengt
 ${brain.watch_outs.length ? `\nDo not suggest:\n${list(brain.watch_outs)}` : ''}
 ${brain.adapt_rules.length ? `\nWhen remaking anything for this channel:\n${list(brain.adapt_rules)}` : ''}
 ${brain.retention?.lessons?.length ? `\n${retentionLines(brain.retention, 5)}\nThese come from their own viewers, so they outrank general advice: write every hook, opening and ending against them.` : ''}
-${brain.source === 'stated'
+${brain.social ? `\nHow their TikToks and Reels did against their usual, by views:\n${brain.social}\nThe topics and openings that beat their usual are the ones to build on; lean away from what fell under it.\n` : ''}${brain.source === 'stated' && !brain.social
   ? '\nThis profile was written from what they told us; their channel is not connected, so none of it is confirmed by real uploads. Do not treat it as fact about their audience or their numbers.'
   : '\nThis profile was read off their real uploads. Trust it over anything the video in front of you implies about them.'}
 This is background on who they are, not a checklist. Use the parts that matter for what is being asked and leave the rest out; do not work every point into every idea.`;
@@ -272,5 +280,6 @@ export function brainLine(brain: ChannelBrain | null): string {
     brain.format && `Format: ${brain.format}`,
     brain.audience && `Audience: ${brain.audience}`,
     retentionLines(brain.retention, 3),
+    brain.social && `Their TikToks and Reels against their usual:\n${brain.social}`,
   ].filter(Boolean).join('\n');
 }

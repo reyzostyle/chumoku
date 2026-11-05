@@ -2,7 +2,8 @@
 import { corsHeaders } from '../_shared/http.ts';
 import { loadCreditStatus, canAfford, spendCredits, CREDIT_COSTS } from '../_shared/credits.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
-import { syncChannelPool, isEnglish, OUTLIER_THRESHOLD } from '../_shared/channel-pool.ts';
+import { syncChannelPool, isEnglish, isSocial, OUTLIER_THRESHOLD, SOCIAL_SYNC_TTL_MS } from '../_shared/channel-pool.ts';
+import { channelIdOf, searchChannels } from '../_shared/social.ts';
 import { pitchVideos, type PitchSource } from '../_shared/pitch.ts';
 import { buildQueries } from '../_shared/niche-query.ts';
 import { loadChannelScan } from '../_shared/channel-scan.ts';
@@ -57,6 +58,8 @@ const QUERY_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SEARCH_WINDOW_DAYS = 30;
 const MAX_NICHE_CHANNELS = 10;       // per phrase
 const MAX_NICHE_TOTAL = 20;          // across phrases
+const SOCIAL_NICHE_CHANNELS = 3;      // per platform, per phrase: each one is three paid requests
+const SOCIAL_SEARCH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SYNC_BATCH = 5;                // channels refreshed in parallel
 const ACTIVE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 const CRON_BUDGET_MS = 110_000;
@@ -162,6 +165,31 @@ async function nicheChannels(supabase: any, query: string, ytApiKey: string): Pr
   return channels;
 }
 
+// The same search on TikTok and Instagram, cached a week. The results are paid
+// for, and the accounts winning a phrase do not change daily.
+async function socialNicheChannels(supabase: any, query: string): Promise<{ id: string; name: string }[]> {
+  const out: { id: string; name: string }[] = [];
+  for (const platform of ['tiktok', 'instagram'] as const) {
+    const key = `${platform}|${query}`;
+    const { data: cached } = await supabase
+      .from('idea_search_cache').select('searched_at, channels').eq('query', key).maybeSingle();
+    if (cached && Date.now() - new Date(cached.searched_at).getTime() < SOCIAL_SEARCH_TTL_MS) {
+      out.push(...(cached.channels ?? []));
+      continue;
+    }
+    try {
+      const channels = await searchChannels(platform, query, SOCIAL_NICHE_CHANNELS);
+      await supabase.from('idea_search_cache')
+        .upsert({ query: key, searched_at: new Date().toISOString(), channels }, { onConflict: 'query' });
+      out.push(...channels);
+    } catch (e) {
+      console.error('[daily-ideas] social search', platform, query, e);
+      out.push(...(cached?.channels ?? []));
+    }
+  }
+  return out;
+}
+
 // Builds one creator's drop for `dropDate`. Assumes the claim on
 // user_tokens.idea_drop_date is already held. Returns how many ideas landed.
 // Other channels' outliers first, then ideas from their own channel in the
@@ -195,6 +223,12 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
     const queries = await nicheQueries(supabase, userId, profile);
     const lists = await Promise.all(queries.map(q =>
       nicheChannels(supabase, q, ytApiKey).catch(e => { console.error('[daily-ideas] search', q, e); return []; })));
+    // Paid requests, so paid plans. A free account still gets the TikTok and
+    // Instagram channels it tracks by hand.
+    const { data: planRow } = await supabase.from('user_tokens').select('plan').eq('user_id', userId).maybeSingle();
+    if (planRow?.plan && planRow.plan !== 'free') {
+      lists.push(...await Promise.all(queries.slice(0, 2).map(q => socialNicheChannels(supabase, q))));
+    }
     const seen = new Set<string>();
     for (let i = 0; i < MAX_NICHE_CHANNELS; i++) {
       for (const list of lists) {
@@ -209,11 +243,13 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
   // Own channel never counts as a competitor.
   const scan = await loadChannelScan(supabase, userId);
   const ownTitle = (scan?.channelTitle || '').toLowerCase();
-  niche = niche.filter(c => !trackedIds.includes(c.id) && c.name.toLowerCase() !== ownTitle).slice(0, MAX_NICHE_TOTAL);
+  const { data: mine } = await supabase.from('social_accounts').select('platform, handle').eq('user_id', userId);
+  const ownSocial = new Set((mine ?? []).map((a: any) => channelIdOf(a.platform, a.handle)));
+  niche = niche.filter(c => !trackedIds.includes(c.id) && !ownSocial.has(c.id) && c.name.toLowerCase() !== ownTitle).slice(0, MAX_NICHE_TOTAL);
 
   const all = [
-    ...(tracked ?? []).map((c: any) => ({ id: c.channel_id, name: c.channel_name, ttl: TRACKED_TTL_MS })),
-    ...niche.map(c => ({ id: c.id, name: c.name, ttl: NICHE_TTL_MS })),
+    ...(tracked ?? []).map((c: any) => ({ id: c.channel_id, name: c.channel_name, ttl: isSocial(c.channel_id) ? SOCIAL_SYNC_TTL_MS : TRACKED_TTL_MS })),
+    ...niche.map(c => ({ id: c.id, name: c.name, ttl: isSocial(c.id) ? SOCIAL_SYNC_TTL_MS : NICHE_TTL_MS })),
   ];
   if (all.length === 0) return 0;
 
