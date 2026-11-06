@@ -129,6 +129,7 @@ struct SettingsView: View {
                         )
                     }
 
+                    fold("social", "TikTok and Instagram") { SocialSection() }
                     fold("channels", "Competitor channels") { ChannelsSection(plan: account?.plan) }
 
                     fold("language", "Language", value: ContentLanguage.name(pickedLanguage ?? ContentLanguage.device)) { languageContent }
