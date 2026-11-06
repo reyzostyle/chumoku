@@ -96,10 +96,10 @@ Deno.serve(async (req: Request) => {
       if (last && Date.now() - last < ttl) continue;
 
       try {
-        await syncChannelPool(supabase, channel.channel_id, channel.channel_name, ytApiKey);
+        await syncChannelPool(supabase, channel.channel_id, channel.channel_title, ytApiKey);
       } catch (e) {
         console.error(`[pool] ${channel.channel_id} failed:`, e);
-        failures.push(channel.channel_name || channel.channel_id);
+        failures.push(channel.channel_title || channel.channel_id);
         continue;
       }
 

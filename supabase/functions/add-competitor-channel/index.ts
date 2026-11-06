@@ -176,7 +176,7 @@ Deno.serve(async (req: Request) => {
     const { data: inserted, error: insertError } = await supabase
       .from('competitor_channels')
       .upsert(
-        { user_id: userId, channel_id: channelId, channel_url: channelUrl, channel_title: channelName, channel_name: channelName, thumbnail_url: channelThumbnail },
+        { user_id: userId, channel_id: channelId, channel_url: channelUrl, channel_title: channelName, thumbnail_url: channelThumbnail },
         { onConflict: 'user_id,channel_id' }
       )
       .select()

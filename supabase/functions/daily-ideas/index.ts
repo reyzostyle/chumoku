@@ -212,7 +212,7 @@ async function buildDrop(supabase: any, userId: string, dropDate: string, profil
 async function dropOutliers(supabase: any, userId: string, dropDate: string, profile: any, ytApiKey: string, limit: number): Promise<number> {
   // 1. Tracked channels, refreshed if stale.
   const { data: tracked } = await supabase
-    .from('competitor_channels').select('channel_id, channel_name').eq('user_id', userId);
+    .from('competitor_channels').select('channel_id, channel_title').eq('user_id', userId);
   const trackedIds = (tracked ?? []).map((c: any) => c.channel_id);
 
   // 2. Channels the niche search turns up.
@@ -248,7 +248,7 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
   niche = niche.filter(c => !trackedIds.includes(c.id) && !ownSocial.has(c.id) && c.name.toLowerCase() !== ownTitle).slice(0, MAX_NICHE_TOTAL);
 
   const all = [
-    ...(tracked ?? []).map((c: any) => ({ id: c.channel_id, name: c.channel_name, ttl: isSocial(c.channel_id) ? SOCIAL_SYNC_TTL_MS : TRACKED_TTL_MS })),
+    ...(tracked ?? []).map((c: any) => ({ id: c.channel_id, name: c.channel_title, ttl: isSocial(c.channel_id) ? SOCIAL_SYNC_TTL_MS : TRACKED_TTL_MS })),
     ...niche.map(c => ({ id: c.id, name: c.name, ttl: isSocial(c.id) ? SOCIAL_SYNC_TTL_MS : NICHE_TTL_MS })),
   ];
   if (all.length === 0) return 0;
