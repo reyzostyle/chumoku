@@ -1,23 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
-import { FUNCTIONS_URL, supabase } from '../lib/supabase';
+import { FUNCTIONS_URL, getSessionToken, supabase } from '../lib/supabase';
+import { callFunction } from '../lib/competitors';
 import { useAuth } from '../contexts/AuthContext';
-import { RefreshOutlineIcon as Loader2, ArrowLeftOutlineIcon as ArrowLeft } from '@solar-icons/react';
+import { RefreshOutlineIcon as Loader2 } from '@solar-icons/react';
 import { Youtube } from './BrandIcons';
-import { requestBrain } from '../lib/brain';
+import { requestBrain, CHANNEL_GOALS } from '../lib/brain';
 
-// The first minutes after signing up (rewritten 2026-10-30, same three steps
-// as the iOS app's OnboardingView).
+// The first minutes after signing up.
 //
-// It was four screens: a welcome, a level, a sentence about yourself and
-// YouTube. The brain reads level, niche and voice off the uploads better than
-// anyone describes them, so the one question left is the connection. Without a
-// channel, one line about what they make stands in for it. Then their own
-// Shorts appear while the brain is read, which is the moment the product shows
-// it is about them, and they walk into ideas that already are.
+// 2026-10-30 this was cut to one question, YouTube, because uploads answer
+// level, niche and voice better than anyone describes them. 2026-11-09 (Ivan):
+// uploads cannot say where you are heading, who you look up to or what you want
+// from it, and the ideas showed it: months of old uploads kept pulling them back
+// to a topic he had left. So: one screen for the things only the creator knows,
+// then their Shorts land while the brain is read, then ideas.
 
 const STORAGE_KEY = 'chumoku_onboarding';
+const MAX_INSPIRATIONS = 3; // the free plan's tracked-channel limit
 
-type Step = 'connect' | 'describe' | 'reading' | 'ready';
+type Step = 'setup' | 'reading' | 'ready';
+interface Draft { tiktok: string; instagram: string; links: string[]; goal: string; about: string }
+const EMPTY: Draft = { tiktok: '', instagram: '', links: [], goal: '', about: '' };
+
+// Survives the trip to Google's consent screen and back.
+function loadDraft(): Draft {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    return d && typeof d === 'object' ? { ...EMPTY, ...d } : EMPTY;
+  } catch { return EMPTY; }
+}
 
 const accent = 'var(--accent)';
 const onAccent = 'var(--on-accent)';
@@ -29,8 +40,10 @@ const cardBase: React.CSSProperties = {
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const { user, signOut } = useAuth();
-  const [step, setStep] = useState<Step>('connect');
-  const [about, setAbout] = useState('');
+  const [step, setStep] = useState<Step>('setup');
+  const [draft, setDraft] = useState<Draft>(loadDraft);
+  const [link, setLink] = useState('');
+  const [failed, setFailed] = useState<string[]>([]);
   const [ytChannel, setYtChannel] = useState<string | null>(null);
   const [thumbs, setThumbs] = useState<string[]>([]);
   const [summary, setSummary] = useState<string | null>(null);
@@ -38,18 +51,20 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState('');
   const started = useRef(false);
 
-  // Back from Google's consent screen: straight to reading the channel.
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); } catch { /* private mode */ }
+  }, [draft]);
+  const set = (patch: Partial<Draft>) => setDraft(d => ({ ...d, ...patch }));
+
+  // Back from Google's consent screen: the form is restored, YouTube ticked.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('youtube_connected') === 'true') {
       window.history.replaceState({}, '', '/');
-      read();
     } else if (params.get('youtube_error')) {
       window.history.replaceState({}, '', '/');
       setError('YouTube did not connect. Try again, or go on without it.');
     }
-    // read() is stable enough here: it runs once, on the first render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Already connected (from Settings, or an earlier attempt): say so.
@@ -91,12 +106,44 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     });
   };
 
-  const read = async () => {
-    if (started.current) return;
-    started.current = true;
+  const addLink = () => {
+    const v = link.trim();
+    if (!v || draft.links.includes(v) || draft.links.length >= MAX_INSPIRATIONS) return;
+    set({ links: [...draft.links, v] });
+    setLink('');
+  };
+
+  const canStart = !!ytChannel || !!draft.tiktok.trim() || !!draft.instagram.trim() || !!draft.about.trim();
+
+  const start = async () => {
+    if (started.current || !user?.id || !canStart) return;
     setError('');
+    const pendingLink = link.trim();
+    const links = pendingLink && !draft.links.includes(pendingLink) ? [...draft.links, pendingLink].slice(0, MAX_INSPIRATIONS) : draft.links;
+    const { error: err } = await supabase.from('user_tokens')
+      .update({ channel_description: draft.about.trim() || null, channel_goal: draft.goal || null }).eq('user_id', user.id);
+    if (err) { setError(`Could not save that (${err.message}). Try again.`); return; }
+
+    started.current = true;
     setStep('reading');
     const poll = setInterval(loadThumbs, 1500);
+
+    // Each one can fail on its own (a typo, a private account). None of them
+    // should stand between someone and their first ideas.
+    const token = await getSessionToken();
+    const call = async (name: string, fn: string, body: object) => {
+      try {
+        const res = token ? await callFunction(fn, token, body) : null;
+        if (!res?.ok) setFailed(f => [...f, name]);
+      } catch { setFailed(f => [...f, name]); }
+    };
+    const { tiktok, instagram } = draft;
+    await Promise.all([
+      tiktok.trim() && call(tiktok.trim(), 'sync-social', { action: 'add', platform: 'tiktok', input: tiktok.trim() }),
+      instagram.trim() && call(instagram.trim(), 'sync-social', { action: 'add', platform: 'instagram', input: instagram.trim() }),
+      ...links.map(l => call(l, 'add-competitor-channel', { channelUrl: l })),
+    ]);
+
     const result = await requestBrain(true).catch(() => null);
     clearInterval(poll);
     await loadThumbs();
@@ -104,14 +151,6 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     await new Promise(r => setTimeout(r, 1200));
     setSummary(result?.brain?.summary ?? null);
     setStep('ready');
-  };
-
-  const saveAbout = async () => {
-    if (!user?.id || !about.trim()) return;
-    const { error: err } = await supabase.from('user_tokens')
-      .update({ channel_description: about.trim() }).eq('user_id', user.id);
-    if (err) { setError(`Could not save that (${err.message}). Try again.`); return; }
-    read();
   };
 
   const finish = async () => {
@@ -135,52 +174,75 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     onDone();
   };
 
+  const field = 'w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none';
+  const label = 'text-[13px] font-medium mb-2.5';
   const primary = 'w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-40';
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10" style={{ background: 'rgb(var(--surface-rgb))' }}>
+    <div className="min-h-screen flex flex-col items-center sm:justify-center px-4 py-10" style={{ background: 'rgb(var(--surface-rgb))' }}>
       <div className="w-full max-w-md">
 
-        {step === 'connect' && (
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-3 text-balance">Connect your YouTube</h1>
-            <p className="text-gray-400 text-sm leading-relaxed mb-8 text-balance">
-              Chumoku reads your Shorts and picks every idea for your channel. Read-only, nothing is ever posted.
-            </p>
-            {ytChannel ? (
-              <button onClick={read} className={primary} style={{ background: accent, color: onAccent }}>
-                Continue as {ytChannel}
-              </button>
-            ) : (
-              <button onClick={connectYouTube} className={primary} style={{ background: accent, color: onAccent }}>
-                <Youtube className="w-4 h-4" /> Connect YouTube
-              </button>
-            )}
-            <button onClick={() => { setError(''); setStep('describe'); }} className="w-full mt-3 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors">
-              I don&apos;t have a channel yet
-            </button>
-          </div>
-        )}
+        {step === 'setup' && (
+          <div className="space-y-7">
+            <h1 className="text-2xl font-bold text-white text-balance">Set up your ideas</h1>
 
-        {step === 'describe' && (
-          <div>
-            <button onClick={() => setStep('connect')} className="flex items-center gap-1.5 mb-6 text-sm text-gray-400 hover:text-white transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            <h1 className="text-2xl font-bold text-white mb-5 text-balance">What do you make?</h1>
-            <textarea
-              value={about}
-              onChange={e => setAbout(e.target.value)}
-              placeholder="Cooking Shorts for students, gym tips, my startup..."
-              rows={3}
-              autoFocus
-              className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none resize-none leading-relaxed"
-              style={{ ...cardBase }}
-              onFocus={e => { e.currentTarget.style.borderColor = accent; }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-            />
-            <p className="mt-2 mb-8 text-xs" style={{ color: 'var(--text-faint)' }}>A sentence is enough.</p>
-            <button onClick={saveAbout} disabled={!about.trim()} className={primary} style={{ background: accent, color: onAccent }}>
+            <div>
+              <p className={label} style={{ color: 'var(--text-muted)' }}>Your accounts</p>
+              <div className="space-y-2">
+                <button onClick={ytChannel ? undefined : connectYouTube} disabled={!!ytChannel}
+                  className={`${field} flex items-center gap-2.5 text-left`} style={cardBase}>
+                  <Youtube className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1 truncate">{ytChannel ?? 'YouTube'}</span>
+                  <span style={{ color: ytChannel ? 'var(--text-faint)' : 'var(--text)' }}>{ytChannel ? 'Connected' : 'Connect'}</span>
+                </button>
+                <input value={draft.tiktok} onChange={e => set({ tiktok: e.target.value })} placeholder="TikTok @name"
+                  autoCapitalize="none" autoCorrect="off" className={field} style={cardBase} />
+                <input value={draft.instagram} onChange={e => set({ instagram: e.target.value })} placeholder="Instagram @name"
+                  autoCapitalize="none" autoCorrect="off" className={field} style={cardBase} />
+              </div>
+            </div>
+
+            <div>
+              <p className={label} style={{ color: 'var(--text-muted)' }}>Who you look up to</p>
+              {draft.links.length < MAX_INSPIRATIONS && (
+                <div className="flex gap-2">
+                  <input value={link} onChange={e => setLink(e.target.value)} placeholder="Link to a channel or profile"
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+                    autoCapitalize="none" autoCorrect="off" className={`${field} flex-1 min-w-0`} style={cardBase} />
+                  <button onClick={addLink} disabled={!link.trim()} className="px-4 rounded-xl text-sm font-medium text-white disabled:opacity-40" style={cardBase}>Add</button>
+                </div>
+              )}
+              {draft.links.length > 0 && (
+                <div className={`flex flex-wrap gap-2 ${draft.links.length < MAX_INSPIRATIONS ? 'mt-2' : ''}`}>
+                  {draft.links.map(l => (
+                    <button key={l} className="chip max-w-full truncate" data-on="true" aria-label={`Remove ${l}`}
+                      onClick={() => set({ links: draft.links.filter(x => x !== l) })}>
+                      {l.replace(/^https?:\/\/(www\.)?/, '')} ×
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className={label} style={{ color: 'var(--text-muted)' }}>What you want</p>
+              <div className="flex flex-wrap gap-2">
+                {CHANNEL_GOALS.map(g => (
+                  <button key={g.value} className="chip" data-on={draft.goal === g.value} onClick={() => set({ goal: draft.goal === g.value ? '' : g.value })}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className={label} style={{ color: 'var(--text-muted)' }}>What your channel is about</p>
+              <textarea value={draft.about} onChange={e => set({ about: e.target.value })}
+                placeholder="What you make now, in your own words" rows={3}
+                className={`${field} resize-none leading-relaxed`} style={cardBase} />
+            </div>
+
+            <button onClick={start} disabled={!canStart} className={primary} style={{ background: accent, color: onAccent }}>
               Continue
             </button>
           </div>
@@ -205,6 +267,11 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         {step === 'ready' && (
           <div>
             <h1 className="text-2xl font-bold text-white mb-5 text-balance">Got it</h1>
+            {failed.length > 0 && (
+              <p className="mb-4 text-sm" style={{ color: 'var(--text-muted)' }}>
+                Could not add {failed.join(', ')}. You can try again in Settings.
+              </p>
+            )}
             {summary && (
               <>
                 <div className="rounded-2xl px-5 py-4 text-sm leading-relaxed text-white" style={cardBase}>{summary}</div>

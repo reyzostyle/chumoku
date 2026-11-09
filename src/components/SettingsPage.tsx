@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { RefreshOutlineIcon as Loader2, EyeOutlineIcon as Eye, EyeClosedOutlineIcon as EyeOff, RefreshOutlineIcon as RefreshCw, LinkOutlineIcon as Link, AltArrowDownOutlineIcon as ChevronDown, SquareArrowRightUpOutlineIcon as ExternalLink, ArrowRightUpOutlineIcon as ArrowUpRight, LockKeyholeMinimalisticOutlineIcon as Lock, ChatRoundOutlineIcon as MessageCircle, CheckCircleBoldIcon as CheckCircle } from '@solar-icons/react';
 import { getSessionToken, fetchWithRetry } from '../lib/supabase';
 
-import { requestBrain, type ChannelBrain, type BrainOverrides } from '../lib/brain';
+import { requestBrain, CHANNEL_GOALS, type ChannelBrain, type BrainOverrides } from '../lib/brain';
 import { syncOwnVideos } from '../lib/ownVideos';
 import { displayNameOf } from '../lib/user';
 import { Page, PageHead, Loading, Tile, Button, Collapse, Skeleton } from './Page';
@@ -110,6 +110,7 @@ export function SettingsPage() {
   // never overwrites them; and the voice heard in their Shorts, which is what
   // the Voice line shows when there is one.
   const [brainOverrides, setBrainOverrides] = useState<BrainOverrides>({});
+  const [channelGoal, setChannelGoal] = useState('');
   const [heardVoice, setHeardVoice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [contextSaving, setContextSaving] = useState(false);
@@ -211,7 +212,7 @@ export function SettingsPage() {
         const [{ data, error }] = await Promise.all([
           supabase
             .from('user_tokens')
-            .select('updated_at, access_token, plan, youtube_channel_name, youtube_channel_thumbnail, channel_description, creator_level, brain, brain_at, brain_overrides, voice, language, credits_reset_at, stripe_subscription_id, apple_product_id, apple_expires_at')
+            .select('updated_at, channel_goal, access_token, plan, youtube_channel_name, youtube_channel_thumbnail, channel_description, creator_level, brain, brain_at, brain_overrides, voice, language, credits_reset_at, stripe_subscription_id, apple_product_id, apple_expires_at')
             .eq('user_id', user.id)
             .maybeSingle(),
           // Waited on, but not forever: it goes out to YouTube, and a slow
@@ -247,6 +248,7 @@ export function SettingsPage() {
         setBrain((data?.brain as ChannelBrain) ?? null);
         setBrainAt(data?.brain_at ?? null);
         setBrainOverrides((data?.brain_overrides as BrainOverrides) ?? {});
+        setChannelGoal((data as { channel_goal?: string | null } | null)?.channel_goal ?? '');
         setHeardVoice((data?.voice as { how_they_talk?: string } | null)?.how_they_talk ?? null);
       } catch {
         if (!cancelled) {
@@ -305,7 +307,7 @@ export function SettingsPage() {
       .select('user_id')
       .eq('user_id', user?.id)
       .maybeSingle();
-    const patch = { channel_description: channelDescription, creator_level: creatorLevel };
+    const patch = { channel_description: channelDescription, creator_level: creatorLevel, channel_goal: channelGoal || null };
     let err;
     if (existing) {
       ({ error: err } = await supabase
@@ -574,6 +576,16 @@ export function SettingsPage() {
                 className="glass-field w-full px-4 py-3 rounded-lg text-white placeholder-gray-600 text-sm focus:outline-none resize-none leading-relaxed transition-colors"
                 style={glassInput}
               />
+            </div>
+            <div>
+              <FieldLabel>What you want</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {CHANNEL_GOALS.map(g => (
+                  <button key={g.value} type="button" className="chip" data-on={channelGoal === g.value} onClick={() => setChannelGoal(g.value)}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
             </div>
             {(contextError || loadFailed) && (
               <p className="text-red-400 text-sm">

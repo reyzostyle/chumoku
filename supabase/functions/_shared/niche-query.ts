@@ -41,6 +41,8 @@ Description: ${description || 'not set'}
 The titles of their own recent uploads:
 ${titles || 'none available'}
 
+If what they say differs from those titles, search for what they say.
+
 Write ${count} different YouTube search phrases in ENGLISH. Each one should come at the subject from a different angle (the game or topic itself, the format, the audience's in-jokes), so together they surface different channels. Two to five words each, the words an English-speaking viewer would actually type, no hashtags, no emoji, no channel names, no quotes.
 
 Reply with the phrases only, one per line.`;

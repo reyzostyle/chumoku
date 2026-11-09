@@ -46,7 +46,18 @@ export interface ChannelBrain {
   // How their TikToks and Reels did against their usual (user_tokens.
   // social_summary). Attached on load like retention, not part of the stored read.
   social?: string | null;
+  // What they say the channel is about now and what they want from it
+  // (user_tokens.channel_description, channel_goal). Attached on load, so a
+  // change counts at once and the weekly rebuild cannot lose it.
+  direction?: string | null;
+  goal?: string | null;
 }
+
+const GOALS: Record<string, string> = {
+  sell: 'selling their product or service through their videos',
+  followers: 'growing a following',
+  viral: 'getting as many views as possible',
+};
 
 // The niche vocabulary, moved here from src/lib/niches.ts when the chips came
 // off the profile screen and nothing in the frontend picked a niche any more.
@@ -85,7 +96,7 @@ ${titles ? `Their last ${scan.videos.length} uploads, newest first:\n${titles}` 
 export async function buildBrain(supabase: any, userId: string): Promise<ChannelBrain | null> {
   const { data: row } = await supabase
     .from('user_tokens')
-    .select('social_summary, creator_level, channel_description, channel_niche, target_audience, channel_context, brain, brain_overrides, retention_lessons')
+    .select('social_summary, creator_level, channel_goal, channel_description, channel_niche, target_audience, channel_context, brain, brain_overrides, retention_lessons')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -116,13 +127,14 @@ export async function buildBrain(supabase: any, userId: string): Promise<Channel
     row?.channel_niche && `Niche they picked: ${row.channel_niche}`,
     row?.target_audience && `Audience they named: ${row.target_audience}`,
     row?.channel_context && `Extra context they added: ${row.channel_context}`,
+    GOALS[row?.channel_goal] && `What they want from their videos: ${GOALS[row.channel_goal]}`,
   ].filter(Boolean).join('\n') || 'They wrote nothing about themselves.';
 
   const level = (row?.creator_level as string) || 'intermediate';
 
   if (!scan && !row?.social_summary && stated.startsWith('They wrote nothing')) return null;
 
-  const prompt = `You are building the working profile of one short-form creator. Everything this product later writes for them - competitor ideas remade for their channel, outlines, hook rewrites - is written against this profile, so it has to describe the channel that exists, not the one they hope to run.
+  const prompt = `You are building the working profile of one short-form creator. Everything this product later writes for them - competitor ideas remade for their channel, outlines, hook rewrites - is written against this profile, so it has to be true to the channel they are making now.
 
 ## What they told us
 Level: ${level}. ${LEVEL_GUIDANCE[level] || LEVEL_GUIDANCE.intermediate}
@@ -134,7 +146,7 @@ ${bestTitles ? `\nTheir most viewed videos of all time:\n${bestTitles}\n` : ''}$
 ## The previous read (last week)
 ${previous.summary}
 Niche: ${previous.niche} | Format: ${previous.format}
-Keep what still holds. Change it only where the uploads have actually moved, not because of one new video.
+Keep what still holds. Change it only where the uploads have actually moved or what they wrote says otherwise, not because of one new video.
 ` : ''}${edits && Object.keys(edits).length ? `
 ## Corrections the creator made by hand
 ${Object.entries(edits).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join('; ') : v}`).join('\n')}
@@ -142,7 +154,7 @@ These are true. Build around them; never contradict them.
 ` : ''}
 Describe what is STABLE across many uploads. A topic, joke, guest or format that shows up once, or only in the last few videos, is not the channel: do not name it in the profile and do not build rules around it. Rules and strengths have to hold for the next ten videos, not describe the last two.
 
-Read the uploads before the self-description. What someone writes about their channel is intent; the titles and the view counts are evidence. Where the two disagree, the uploads win, and say so plainly in the summary rather than splitting the difference. If there are no uploads, work from what they wrote and keep every claim to what it supports - do not invent a format, a voice or an audience out of one sentence.
+Use the uploads for how the channel is made and what has worked: format, voice, strengths, the view range. What they wrote about their channel decides its subject (Ivan, 2026-11-09: creators change direction, and old uploads kept pulling every idea back to the old topic). Where the uploads are about something else, write the summary, niche, audience and adapt_rules for what they say it is now. If they wrote nothing, the uploads decide everything. If there are no uploads, work from what they wrote and keep every claim to what it supports - do not invent a format, a voice or an audience out of one sentence.
 
 Pay attention to the view range. An idea that only works at a scale they are nowhere near is not useful to them, and neither is advice pitched at a level they are past.
 
@@ -211,7 +223,7 @@ export function mergeBrain(brain: ChannelBrain | null, overrides: BrainOverrides
 // deno-lint-ignore no-explicit-any
 export async function loadBrain(supabase: any, userId: string): Promise<ChannelBrain | null> {
   const { data } = await supabase
-    .from('user_tokens').select('brain, brain_overrides, retention_lessons, social_summary').eq('user_id', userId).maybeSingle();
+    .from('user_tokens').select('brain, brain_overrides, retention_lessons, social_summary, channel_description, channel_goal').eq('user_id', userId).maybeSingle();
   const brain = mergeBrain((data?.brain as ChannelBrain) ?? null, (data?.brain_overrides as BrainOverrides) ?? null);
   const lessons = data?.retention_lessons as RetentionLessons | null;
   if (!brain) return brain;
@@ -219,6 +231,8 @@ export async function loadBrain(supabase: any, userId: string): Promise<ChannelB
     ...brain,
     retention: lessons?.lessons?.length ? lessons : brain.retention,
     social: data?.social_summary ?? null,
+    direction: data?.channel_description?.trim() || null,
+    goal: data?.channel_goal ?? null,
   };
 }
 
@@ -253,7 +267,7 @@ export function brainBlock(brain: ChannelBrain | null): string {
   return `
 ## Their channel
 ${brain.summary}
-${brain.niche ? `Niche: ${brain.niche}` : ''}
+${brain.direction ? `\nWhat they say this channel is about now, in their words. This decides the subject of every idea; where it differs from anything below, it wins:\n${brain.direction}\n` : ''}${GOALS[brain.goal ?? ''] ? `What they want from these videos: ${GOALS[brain.goal!]}.\n` : ''}${brain.niche ? `Niche: ${brain.niche}` : ''}
 ${brain.format ? `Format: ${brain.format}` : ''}
 ${brain.audience ? `Audience: ${brain.audience}` : ''}
 ${brain.voice ? `Voice: ${brain.voice}` : ''}
@@ -276,6 +290,7 @@ export function brainLine(brain: ChannelBrain | null): string {
   if (!brain) return '';
   return [
     `Their channel: ${brain.summary}`,
+    brain.direction && `What they say it is about now, which decides the subject: ${brain.direction}`,
     brain.niche && `Niche: ${brain.niche}`,
     brain.format && `Format: ${brain.format}`,
     brain.audience && `Audience: ${brain.audience}`,

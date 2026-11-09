@@ -44,7 +44,7 @@ export function canSuggest(scan: ChannelScan | null, brain: ChannelBrain | null)
 // What is fresh in their subject. Never throws: without it the ideas are less
 // current, not absent.
 async function research(brain: ChannelBrain | null, scan: ChannelScan | null): Promise<string> {
-  const subject = [brain?.niche, brain?.summary].filter(Boolean).join('. ')
+  const subject = [brain?.direction, brain?.niche, brain?.summary].filter(Boolean).join('. ')
     || (scan ? `${scan.channelTitle}: ${scan.videos.slice(0, 8).map(v => v.title).join('; ')}` : '');
   if (!subject) return '';
   try {

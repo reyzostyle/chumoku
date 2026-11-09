@@ -22,6 +22,14 @@ export interface ChannelBrain {
 export type BrainOverrides = Partial<Pick<ChannelBrain,
   'summary' | 'niche' | 'format' | 'audience' | 'voice' | 'strengths' | 'watch_outs' | 'adapt_rules'>>;
 
+// What a creator wants from their videos (user_tokens.channel_goal).
+export const CHANNEL_GOALS = [
+  { value: 'sell', label: 'Sell something' },
+  { value: 'followers', label: 'Get followers' },
+  { value: 'viral', label: 'Go viral' },
+  { value: 'other', label: 'Something else' },
+];
+
 export interface BrainResult {
   brain: ChannelBrain | null;
   // The server refused to rebuild because the last build was under a minute

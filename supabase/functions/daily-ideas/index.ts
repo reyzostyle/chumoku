@@ -116,7 +116,7 @@ async function nicheQueries(supabase: any, userId: string, profile: any): Promis
   const brain = await loadBrain(supabase, userId);
   const niche = brain?.niche || profile?.channel_niche || '';
   const description = brain
-    ? [brain.summary, brain.format].filter(Boolean).join(' ')
+    ? [brain.direction, brain.summary, brain.format].filter(Boolean).join(' ')
     : (profile?.channel_description || '');
   if (!scan?.videos?.length && !niche && !description) return [];
 
