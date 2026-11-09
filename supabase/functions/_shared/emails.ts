@@ -266,8 +266,8 @@ function upgrade(ctx: EmailCtx): RenderedEmail {
   const url = `${ctx.appUrl}/#pricing`;
   const text = `chumoku runs on a subscription.
 
-Plus is $9.99 a month: ten new ideas every morning and about 30 scripts, each
-one written from an idea in one press. Pro is $19.99, about 100, for posting
+Plus is $29 a month: ten new ideas every morning and about 30 scripts, each
+one written from an idea in one press. Pro is $49, about 100, for posting
 every day.
 
 the part worth knowing: the more you use it, the better it gets at your
@@ -288,7 +288,7 @@ unsubscribe: ${ctx.unsubscribeUrl}`;
       unsubscribeUrl: ctx.unsubscribeUrl,
       body:
         h('your next idea is waiting.') +
-        p(`${strong('Plus, $9.99 a month')}: ten new ideas every morning and about 30 scripts, each one written from an idea in one press. ${strong('Pro, $19.99')}, about 100, for posting every day.`) +
+        p(`${strong('Plus, $29 a month')}: ten new ideas every morning and about 30 scripts, each one written from an idea in one press. ${strong('Pro, $49')}, about 100, for posting every day.`) +
         p('the part worth knowing: the more you use it, the better it gets at your channel specifically. it reads your uploads, remembers the ideas you kept and the notes you wrote, and answers against them.'),
     }),
   };

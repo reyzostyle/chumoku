@@ -38,7 +38,7 @@ struct AdminView: View {
                 if let s = stats {
                     // Monthly billing assumed, as on the web: yearly plans
                     // are not recorded separately.
-                    let mrr = Double(s.plan_plus) * 9.99 + Double(s.plan_pro) * 19.99
+                    let mrr = Double(s.plan_plus) * 29 + Double(s.plan_pro) * 49
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                         tile("MRR", money(mrr), "\(s.plan_plus + s.plan_pro) paying")
                         tile("Revenue 28d", money(Double(s.revenue_28d_cents) / 100), "\(s.new_subs_28d) new · \(s.cancels_28d) cancelled")

@@ -795,6 +795,9 @@ export function SettingsPage() {
 
       {/* ── Discord: where people talk to us. Not folded away in a Help
           section, not the big banner it once was either. ── */}
+      <button onClick={() => go('partners')} className="row mb-3">
+        <span className="flex-1 text-[15px] font-medium" style={{ color: 'var(--text)' }}>Earn 30% with your link</span>
+      </button>
       <a href="https://discord.gg/N8S6C95Ry2" target="_blank" rel="noopener noreferrer" className="row-group block"
          style={{ background: 'rgba(88,101,242,0.08)', borderColor: 'rgba(88,101,242,0.28)' }}>
         <span className="row">

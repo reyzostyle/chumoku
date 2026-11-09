@@ -522,12 +522,10 @@ interface Plan {
   highlight: boolean;
 }
 
-// Mirrors UpgradePage.tsx's live Stripe prices. yearlyTotal is 12x the
-// monthly rate rounded up 11c to end in .99 (Plus has no further discount
-// on top of that; Pro's yearlyMonthlyPrice is the real ~35% cut).
+// Mirrors UpgradePage.tsx's live Stripe prices (2026-11-09).
 const pricingPlans: Plan[] = [
   {
-    name: 'Plus', monthlyPrice: 9.99, yearlyMonthlyPrice: 9.99, yearlyTotal: 119.99,
+    name: 'Plus', monthlyPrice: 29, yearlyMonthlyPrice: 12.42, yearlyTotal: 149,
     // Competitors sits in `quotas` rather than `features` on purpose: quotas
     // render as the bold rows and features as the ticked ones, and this is the
     // one line that separates paid from the free trial (enforced server-side
@@ -537,7 +535,7 @@ const pricingPlans: Plan[] = [
     cta: 'Get Plus', highlight: false,
   },
   {
-    name: 'Pro', monthlyPrice: 19.99, yearlyMonthlyPrice: 12.99, yearlyTotal: 155.99,
+    name: 'Pro', monthlyPrice: 49, yearlyMonthlyPrice: 24.92, yearlyTotal: 299,
     quotas: ['About 100 scripts a month', '10 tracked channels', '300 credits'],
     features: ['Everything in Plus', 'For posting every day'],
     cta: 'Get Pro', highlight: true,
@@ -577,12 +575,12 @@ function PricingCard({ plan, interval, onSelect }: { plan: Plan; interval: Inter
 
       <div className="flex items-baseline gap-1.5 mb-1">
         <span key={`${plan.name}-${interval}`} className="text-[34px] leading-none font-semibold tracking-tight tabular-nums animate-fade-in" style={{ color: 'var(--text)' }}>
-          ${price.toFixed(2)}
+          ${Number.isInteger(price) ? price : price.toFixed(2)}
         </span>
         <span className="font-mono text-[11px]" style={{ color: 'var(--text-faint)' }}>/ mo</span>
       </div>
       <p className="font-mono text-[11px] mb-5" style={{ color: 'var(--text-faint)' }}>
-        {interval === 'year' ? `$${plan.yearlyTotal.toFixed(2)} billed yearly` : 'billed monthly'}
+        {interval === 'year' ? `$${plan.yearlyTotal} billed yearly` : 'billed monthly'}
       </p>
 
       <div className="space-y-2 mb-5">

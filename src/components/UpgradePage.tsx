@@ -23,23 +23,16 @@ interface Plan {
   cta: string;
 }
 
-// Actual Stripe prices (2026-08-17 repricing). Plus's yearly total ($119.99)
-// is exactly 12x its monthly rate rounded up 11c to end in .99 — no yearly
-// discount, since Plus is already the cheap option. Pro's yearly total
-// ($155.99) gets the SAME +11c rounding move applied to its $12.99/mo
-// effective rate, which is a real ~35% discount off Pro's $19.99 monthly —
-// pushes commitment toward the higher tier, which is where it matters most.
-// Free isn't shown here on purpose — it's a real plan (new signups start on
-// it), but listing it as a third card made this a long scroll on mobile
-// before reaching an actual paid option. New users land on Free without
-// needing to pick it off a pricing grid.
+// Actual Stripe prices (2026-11-09). There is no free plan.
+const money = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+
 const plans: Plan[] = [
   {
     id: 'pro',
     name: 'Plus',
-    monthlyPrice: 9.99,
-    yearlyTotal: 119.99,
-    yearlyMonthlyPrice: 9.99,
+    monthlyPrice: 29,
+    yearlyTotal: 149,
+    yearlyMonthlyPrice: 12.42,
     // Rewritten 2026-09-30 with the product: no scores and no Analytics any
     // more, so nothing here promises either.
     quotas: ['About 30 scripts / month', '100 credits: 3 a script, 1 a message', 'Ideas pitched for your channel'],
@@ -55,13 +48,13 @@ const plans: Plan[] = [
   {
     id: 'agency',
     name: 'Pro',
-    monthlyPrice: 19.99,
-    yearlyTotal: 155.99,
-    yearlyMonthlyPrice: 12.99,
+    monthlyPrice: 49,
+    yearlyTotal: 299,
+    yearlyMonthlyPrice: 24.92,
     quotas: ['About 100 scripts / month', '300 credits', 'For posting every day'],
     features: [
       'Everything in Plus',
-      'Highest monthly limits',
+      'Track up to 10 channels',
     ],
     cta: 'Upgrade to Pro',
   },
@@ -165,7 +158,7 @@ export function UpgradePage() {
                     const isYearly = interval === 'year';
                     const displayPrice = (isYearly ? plan.yearlyMonthlyPrice : plan.monthlyPrice) ?? null;
                     const billedYearly = isYearly && plan.yearlyTotal != null
-                      ? `$${plan.yearlyTotal.toFixed(2)} billed yearly`
+                      ? `$${money(plan.yearlyTotal)} billed yearly`
                       : null;
                     // Only show a struck-through "was" price when yearly billing
                     // actually undercuts the monthly rate (Plus doesn't).
@@ -174,9 +167,9 @@ export function UpgradePage() {
                       <>
                         <div className="flex items-baseline gap-1.5 select-none">
                           {showWasPrice && (
-                            <span className="text-lg text-gray-600 line-through">${plan.monthlyPrice!.toFixed(2)}</span>
+                            <span className="text-lg text-gray-600 line-through">${money(plan.monthlyPrice!)}</span>
                           )}
-                          <span className="text-3xl font-bold text-white">{displayPrice != null ? `$${displayPrice.toFixed(2)}` : '—'}</span>
+                          <span className="text-3xl font-bold text-white">{displayPrice != null ? `$${money(displayPrice)}` : '—'}</span>
                           <span className="text-sm text-gray-500">/month</span>
                         </div>
                         <p className="text-xs text-gray-600 mt-0.5">
@@ -188,7 +181,7 @@ export function UpgradePage() {
                         {plan.id === 'agency' && proYearlySavings > 0 && (
                           <p className="mt-2 inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium tabular-nums transition-opacity duration-200"
                              style={{ background: 'rgba(245,196,81,0.12)', color: 'var(--upgrade)', opacity: isYearly ? 1 : 0.55 }}>
-                            {isYearly ? `You save $${proYearlySavings.toFixed(2)} a year` : `Save $${proYearlySavings.toFixed(2)} with yearly`}
+                            {isYearly ? `You save $${money(proYearlySavings)} a year` : `Save $${money(proYearlySavings)} with yearly`}
                           </p>
                         )}
                       </>

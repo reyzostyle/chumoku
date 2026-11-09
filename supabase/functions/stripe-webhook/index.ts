@@ -11,6 +11,17 @@ const PRICE_TO_PLAN: Record<string, string> = {
   [Deno.env.get('STRIPE_AGENCY_PRICE_ID') || '']: 'agency',
 };
 
+// By product, because checkout charges each product's default price: a new
+// price or the yearly one is not in PRICE_TO_PLAN, and used to fall through to
+// Plus even for someone who bought Pro.
+// deno-lint-ignore no-explicit-any
+function planOf(price: any): string {
+  const product = typeof price?.product === 'string' ? price.product : price?.product?.id;
+  const pro = ['STRIPE_AGENCY_MONTHLY_PRODUCT_ID', 'STRIPE_AGENCY_YEARLY_PRODUCT_ID', 'STRIPE_AGENCY_PRODUCT_ID'].map(k => Deno.env.get(k));
+  if (product && pro.includes(product)) return 'agency';
+  return PRICE_TO_PLAN[price?.id ?? ''] || 'pro';
+}
+
 // How long an affiliate keeps earning from one subscriber, and how long an
 // earning sits before it can be paid out (a refund or chargeback lands first).
 const COMMISSION_MONTHS = 12;
@@ -141,8 +152,7 @@ Deno.serve(async (req: Request) => {
 
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const priceId = subscription.items.data[0]?.price.id || '';
-        plan = PRICE_TO_PLAN[priceId] || 'pro';
+        plan = planOf(subscription.items.data[0]?.price);
       }
 
       const resetAt = new Date();
@@ -219,8 +229,7 @@ Deno.serve(async (req: Request) => {
       });
 
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const priceId = subscription.items.data[0]?.price.id || '';
-      const plan = PRICE_TO_PLAN[priceId] || 'pro';
+      const plan = planOf(subscription.items.data[0]?.price);
       const customerId = subscription.customer as string;
 
       const { data: tokenRow } = await supabase

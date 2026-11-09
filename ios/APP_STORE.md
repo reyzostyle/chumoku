@@ -47,10 +47,10 @@ in a dashboard.
 4. **Purchases.** Monetization → Subscriptions → group `Chumoku`:
    | Product ID | Name | Price | Level |
    |---|---|---|---|
-   | `co.chumoku.app.pro.monthly` | Pro | $19.99 / month | 1 |
-   | `co.chumoku.app.pro.yearly` | Pro | $155.99 / year | 1 |
-   | `co.chumoku.app.plus.monthly` | Plus | $9.99 / month | 2 |
-   | `co.chumoku.app.plus.yearly` | Plus | $119.99 / year | 2 |
+   | `co.chumoku.app.pro.monthly` | Pro | $49 / month | 1 |
+   | `co.chumoku.app.pro.yearly` | Pro | $299 / year | 1 |
+   | `co.chumoku.app.plus.monthly` | Plus | $29 / month | 2 |
+   | `co.chumoku.app.plus.yearly` | Plus | $149 / year | 2 |
 
    In-App Purchases → Consumable `co.chumoku.app.credits50`, "50 credits",
    $4.99. Each one needs a display name, a one-line description and a review

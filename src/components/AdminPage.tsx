@@ -111,11 +111,11 @@ export function AdminPage() {
 
   const paying = stats.plan_plus + stats.plan_pro;
   // Approximation: assumes every subscriber is on monthly billing. Yearly
-  // subscribers pay $119.99 on Plus and $155.99 on Pro, which works out to
+  // subscribers pay $149 on Plus and $299 on Pro, which works out to
   // $10.00 and $13.00 a month, so a yearly Pro is counted here as $7 a month
   // more than it brings in. plan_events doesn't record the billing interval,
   // so this cannot be split without storing it first.
-  const mrr = stats.plan_plus * 9.99 + stats.plan_pro * 19.99;
+  const mrr = stats.plan_plus * 29 + stats.plan_pro * 49;
   const revenue28d = stats.revenue_28d_cents / 100;
   const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigits: n < 100 ? 2 : 0 })}`;
   const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
@@ -147,8 +147,8 @@ export function AdminPage() {
         </div>
         <div className="grid grid-cols-3 gap-4 mt-4">
           {[
-            ['Pro', stats.plan_pro, '$19.99'],
-            ['Plus', stats.plan_plus, '$9.99'],
+            ['Pro', stats.plan_pro, '$49'],
+            ['Plus', stats.plan_plus, '$29'],
             ['Trial', stats.plan_free, 'free'],
           ].map(([name, n, price]) => (
             <div key={name as string}>

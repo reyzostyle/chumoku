@@ -24,8 +24,8 @@ struct PlansView: View {
     // What the App Store will say, shown until it does (and when it cannot be
     // reached), so the page never opens on empty price slots.
     private static let fallback: [String: Decimal] = [
-        Purchases.plusMonthly: 9.99, Purchases.plusYearly: 119.99,
-        Purchases.proMonthly: 19.99, Purchases.proYearly: 155.99,
+        Purchases.plusMonthly: 29, Purchases.plusYearly: 149,
+        Purchases.proMonthly: 49, Purchases.proYearly: 299,
         Purchases.credits50: 4.99,
     ]
 
