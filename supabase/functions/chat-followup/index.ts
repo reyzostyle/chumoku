@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/http.ts';
 import { loadVoiceBlock } from '../_shared/voice.ts';
+import { currentRule } from '../_shared/current.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { callLLMWithTools } from '../_shared/llm.ts';
 import { parseImages } from '../_shared/images.ts';
@@ -298,7 +299,7 @@ ${idea.script ? `\nThe script already written for it (they will want changes to 
 
     const voice = await loadVoiceBlock(supabase, user.id);
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const prompt = `${chatLanguageRule(language)}## Today\n${today}\n\n${block ? `## Who you are talking to\n${block}\n\n` : ''}${voice}${ideaBlock}${reviewBlock}${retention}${history ? `## The conversation so far\n${history}\n\n` : ''}${hasImage ? `## Attached\n${images.length === 1 ? 'A screenshot is' : `${images.length} screenshots are`} attached above. They are the evidence for whatever they are asking.\n\n` : ''}${messageBlock}`;
+    const prompt = `${chatLanguageRule(language)}## Today\n${today}${currentRule()}\n\n${block ? `## Who you are talking to\n${block}\n\n` : ''}${voice}${ideaBlock}${reviewBlock}${retention}${history ? `## The conversation so far\n${history}\n\n` : ''}${hasImage ? `## Attached\n${images.length === 1 ? 'A screenshot is' : `${images.length} screenshots are`} attached above. They are the evidence for whatever they are asking.\n\n` : ''}${messageBlock}`;
 
     // One call, tools on it. A lookup pays for a second round trip only when
     // the answer depends on something only this account knows.

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { BASELINE_SIZE, MIN_BASELINE, BASELINE_MIN_AGE_DAYS, isShort, median, ageDays, roundScore } from './channel-baseline.ts';
+import { BASELINE_SIZE, MIN_BASELINE, BASELINE_MIN_AGE_DAYS, isShort, isVertical, median, ageDays, roundScore } from './channel-baseline.ts';
 import { fetchRecentVideos, platformOf, storeThumbnails, type Platform } from './social.ts';
 
 // Building one channel's slice of the shared competitor pool: which of its
@@ -92,13 +92,14 @@ export async function fetchChannelPool(
 
   // One stats call covers the whole baseline (same quota cost as fetching five).
   const statsRes = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?id=${videoIds.join(',')}&part=snippet,statistics,contentDetails,liveStreamingDetails&key=${ytApiKey}`
+    `https://www.googleapis.com/youtube/v3/videos?id=${videoIds.join(',')}&part=snippet,statistics,contentDetails,liveStreamingDetails,player&maxHeight=720&key=${ytApiKey}`
   );
   if (!statsRes.ok) throw new Error(`YouTube videos API error: ${await statsRes.text()}`);
   const statsData = await statsRes.json();
 
   const shorts = (statsData.items || [])
     .filter(isShort)
+    .filter(isVertical)
     .filter(isEnglish)
     .map((item: any) => ({
       videoId: item.id,

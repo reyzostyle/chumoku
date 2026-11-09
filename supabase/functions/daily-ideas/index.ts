@@ -3,7 +3,7 @@ import { corsHeaders } from '../_shared/http.ts';
 import { loadCreditStatus, canAfford, spendCredits, CREDIT_COSTS } from '../_shared/credits.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { syncChannelPool, isEnglish, isSocial, OUTLIER_THRESHOLD, SOCIAL_SYNC_TTL_MS } from '../_shared/channel-pool.ts';
-import { channelIdOf, searchChannels } from '../_shared/social.ts';
+import { channelIdOf, searchChannels, socialUsage } from '../_shared/social.ts';
 import { pitchVideos, type PitchSource } from '../_shared/pitch.ts';
 import { buildQueries } from '../_shared/niche-query.ts';
 import { loadChannelScan } from '../_shared/channel-scan.ts';
@@ -48,6 +48,10 @@ const MORE_OWN = 5;
 // whose usual is 100 views is 382 views, which proves nothing (Ivan,
 // 2026-10-27).
 const MIN_VIEWS = 10_000;
+// Older than this and the format or the news in it has moved on (Ivan,
+// 2026-11-09). Two thirds of the outlier pool is inside 60 days; the research
+// ideas fill whatever seats this leaves empty.
+const MAX_AGE_DAYS = 60;
 const DROP_HOUR = 9;
 const PITCH_POOL = 30;                       // candidates pitched to pick DROP_SIZE from
 const PER_CHANNEL = 2;
@@ -63,6 +67,8 @@ const SOCIAL_SEARCH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SYNC_BATCH = 5;                // channels refreshed in parallel
 const ACTIVE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 const CRON_BUDGET_MS = 110_000;
+
+interface DropStats { search_ms: number; sync_ms: number; pitch_ms: number; own_ms: number; channels: number; social_channels: number }
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
@@ -195,21 +201,36 @@ async function socialNicheChannels(supabase: any, query: string): Promise<{ id: 
 // Other channels' outliers first, then ideas from their own channel in the
 // seats left (at least OWN_MIN of them).
 async function buildDrop(supabase: any, userId: string, dropDate: string, profile: any, ytApiKey: string): Promise<number> {
+  const started = Date.now();
+  const paidBefore = socialUsage.requests;
+  const stats: DropStats = { search_ms: 0, sync_ms: 0, pitch_ms: 0, own_ms: 0, channels: 0, social_channels: 0 };
+  const save = async (outliers: number, own: number) => {
+    // Never let the measuring break the drop.
+    try {
+      await supabase.from('idea_drop_stats').upsert({
+        user_id: userId, drop_date: dropDate, total_ms: Date.now() - started, ...stats,
+        paid_requests: socialUsage.requests - paidBefore, outliers, own_ideas: own,
+      }, { onConflict: 'user_id,drop_date' });
+    } catch (e) { console.error('[daily-ideas] stats', e); }
+  };
   const [scan, brain] = await Promise.all([loadChannelScan(supabase, userId), loadBrain(supabase, userId)]);
   const own = canSuggest(scan, brain);
-  const outliers = await dropOutliers(supabase, userId, dropDate, profile, ytApiKey, own ? DROP_SIZE - OWN_MIN : DROP_SIZE);
-  if (!own) return outliers;
+  const outliers = await dropOutliers(supabase, userId, dropDate, profile, ytApiKey, own ? DROP_SIZE - OWN_MIN : DROP_SIZE, stats);
+  if (!own) { await save(outliers, 0); return outliers; }
   let suggested = 0;
+  const ownStart = Date.now();
   try {
     suggested = await suggestFromChannel(supabase, userId, DROP_SIZE - outliers, dropDate);
   } catch (e) {
     console.error('[daily-ideas] own ideas failed:', e);
   }
+  stats.own_ms = Date.now() - ownStart;
+  await save(outliers, suggested);
   return outliers + suggested;
 }
 
 // Picks up to `limit` outliers from tracked and niche channels into the drop.
-async function dropOutliers(supabase: any, userId: string, dropDate: string, profile: any, ytApiKey: string, limit: number): Promise<number> {
+async function dropOutliers(supabase: any, userId: string, dropDate: string, profile: any, ytApiKey: string, limit: number, stats: DropStats): Promise<number> {
   // 1. Tracked channels, refreshed if stale.
   const { data: tracked } = await supabase
     .from('competitor_channels').select('channel_id, channel_title').eq('user_id', userId);
@@ -218,6 +239,7 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
   // 2. Channels the niche search turns up.
   //    Every phrase, merged: the top of each list first, so no single angle
   //    crowds out the others.
+  const searchStart = Date.now();
   let niche: { id: string; name: string }[] = [];
   try {
     const queries = await nicheQueries(supabase, userId, profile);
@@ -251,6 +273,9 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
     ...(tracked ?? []).map((c: any) => ({ id: c.channel_id, name: c.channel_title, ttl: isSocial(c.channel_id) ? SOCIAL_SYNC_TTL_MS : TRACKED_TTL_MS })),
     ...niche.map(c => ({ id: c.id, name: c.name, ttl: isSocial(c.id) ? SOCIAL_SYNC_TTL_MS : NICHE_TTL_MS })),
   ];
+  stats.search_ms = Date.now() - searchStart;
+  stats.channels = all.length;
+  stats.social_channels = all.filter(c => isSocial(c.id)).length;
   if (all.length === 0) return 0;
 
   const { data: syncRows } = await supabase
@@ -260,11 +285,14 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
     const last = syncedAt.get(c.id) as number | undefined;
     return !last || Date.now() - last >= c.ttl;
   });
+  const syncStart = Date.now();
   for (let i = 0; i < stale.length; i += SYNC_BATCH) {
     await Promise.all(stale.slice(i, i + SYNC_BATCH).map(c =>
       syncChannelPool(supabase, c.id, c.name, ytApiKey)
         .catch(e => console.error(`[daily-ideas] pool ${c.id} failed:`, e))));
   }
+
+  stats.sync_ms = Date.now() - syncStart;
 
   // 3. Candidates: outliers from all of them, minus anything already ruled on
   //    or already shown in an earlier drop.
@@ -273,7 +301,8 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
     .select('video_id, channel_id, channel_name, title, views, published_at, outlier_score')
     .in('channel_id', all.map(c => c.id))
     .gte('outlier_score', OUTLIER_THRESHOLD)
-    .gte('views', MIN_VIEWS);
+    .gte('views', MIN_VIEWS)
+    .gte('published_at', new Date(Date.now() - MAX_AGE_DAYS * 86_400_000).toISOString());
   if (!pooled?.length) return 0;
 
   const { data: known } = await supabase
@@ -303,7 +332,9 @@ async function dropOutliers(supabase: any, userId: string, dropDate: string, pro
 
   // 4. Pitch what has no pitch yet (one call), then pick: fits first.
   const unpitched = ranked.filter(p => !(knownBy.get(p.video_id) as any)?.pitch);
+  const pitchStart = Date.now();
   const fresh = await pitchVideos(supabase, userId, unpitched);
+  stats.pitch_ms = Date.now() - pitchStart;
   const fitBy = new Map<string, string | null>();
   for (const k of known ?? []) fitBy.set(k.video_id, k.fit);
   for (const r of fresh) fitBy.set(r.video_id, r.fit);
@@ -465,6 +496,9 @@ Deno.serve(async (req: Request) => {
           await buildVoice(supabase, u.user_id);
         } catch (e) {
           console.error(`[daily-ideas] voice ${u.user_id} failed:`, e);
+          // A failed build (the model was down) tries again tomorrow, not in a week.
+          await supabase.from('user_tokens')
+            .update({ voice_at: new Date(Date.now() - VOICE_TTL_MS + 86_400_000).toISOString() }).eq('user_id', u.user_id);
         }
       }
       return json({ ok: true, built, skipped, tidied, brains, voices });

@@ -7,6 +7,7 @@ import { loadVoiceBlock } from '../_shared/voice.ts';
 import { loadBrain, brainBlock } from '../_shared/brain.ts';
 import { loadChannelScan, channelScanBlock } from '../_shared/channel-scan.ts';
 import { fetchTranscript, extractConceptAndAdapt, generateOutline } from '../_shared/steal.ts';
+import { currentRule } from '../_shared/current.ts';
 import { loadCreditStatus, canAfford, spendCredits, CREDIT_COSTS } from '../_shared/credits.ts';
 
 // From an idea to the words to say, in one press (2026-10-28).
@@ -37,8 +38,8 @@ Rules:
 - If the outline says to show something, turn it into what the creator SAYS while it is on screen, or describe it in words if it must land without visuals.
 - The first line is the hook, tightened so it lands in the first two seconds.
 - Short sentences. One idea per line. A line break between lines so it reads well on a prompter.
-- About 130-170 words total unless the outline clearly needs more. Shorts reward cutting.
-- Sound like this creator talks, not like an ad. Plain words, no hype words.
+- Length: follow the creator's usual length when it is given. Without one, about 130-170 words. Shorts reward cutting.
+- Sound like this creator talks, not like an ad. Plain words, no hype words. Only words they would really say, at their level of English: if they talk simply, write simply.
 - End with the call to action from the outline, said naturally, or a light ending (a follow or a question, never a sales line).
 
 Return only the script text.`;
@@ -77,6 +78,15 @@ Deno.serve(async (req: Request) => {
     const lang = languageRule(language);
     const scanBlock = channelScanBlock(scan);
 
+    // Their real length, from their latest Shorts. A fixed word count made a
+    // 60-second script for someone who posts 30-second ones.
+    const { data: lengths } = await supabase.from('videos').select('duration')
+      .eq('user_id', user.id).gt('duration', 0).lte('duration', 180)
+      .order('published_at', { ascending: false, nullsFirst: false }).limit(12);
+    const secs = (lengths ?? []).map((v: any) => v.duration as number).sort((a: number, b: number) => a - b);
+    const usual = secs.length >= 5 ? secs[Math.floor(secs.length / 2)] : null;
+    const lengthLine = usual ? `\n\nTheir Shorts usually run about ${usual} seconds. Fit that length: about ${Math.round(usual * 2.7)} words spoken.` : '';
+
     let concept: string | null = idea.concept;
     let adapted: string | null = idea.adapted_idea;
     let outline = idea.outline as { hook: string; sections: { title: string; content: string; duration?: string }[]; cta: string } | null;
@@ -95,19 +105,19 @@ Extra context: ${profile?.channel_context || 'not set'}`;
         const transcript = await fetchTranscript(idea.video_id);
         const read = await extractConceptAndAdapt(
           idea.video_id, idea.video_title || '', idea.video_views || 0, idea.outlier_score ?? null,
-          transcript, profileBlock + lang, scanBlock, brain?.niche || profile?.channel_niche || '',
+          transcript, profileBlock + lang, scanBlock, brain?.niche || profile?.channel_niche || '', idea.pitch || '',
         );
         concept = read.concept || concept;
         adapted = read.adapted_idea || idea.pitch || null;
       }
       // Watch: the beats, the cuts, the first frame.
       if (!outline) {
-        outline = await generateOutline(idea.video_id, idea.video_title || '', adapted || idea.pitch || '', profileBlock + lang, scanBlock, voice);
+        outline = await generateOutline(idea.video_id, idea.video_title || '', adapted || idea.pitch || '', profileBlock + lengthLine + lang, scanBlock, voice);
       }
     }
 
     const prompt = [
-      brainBlock(brain),
+      brainBlock(brain) + lengthLine,
       voice,
       outline
         ? [
@@ -122,6 +132,7 @@ Extra context: ${profile?.channel_context || 'not set'}`;
           'No outline: give it a hook, two or three beats and a light ending.',
         ].filter(Boolean).join('\n\n'),
       lang.trim(),
+      currentRule().trim(),
     ].filter(Boolean).join('\n\n');
 
     const script = (await callLLM(prompt, { system: SYSTEM, maxTokens: 1200, tier: 'writer' }))

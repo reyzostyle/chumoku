@@ -4,6 +4,7 @@ import { callLLM } from './llm.ts';
 import { parseModelJson } from './json.ts';
 import { loadBrain, brainBlock } from './brain.ts';
 import { loadChannelScan, channelScanBlock } from './channel-scan.ts';
+import { currentRule, inventsVersion } from './current.ts';
 
 // One cheap call over titles only: for each pooled Short, what THIS creator's
 // version would be and whether it fits their channel. Shared by pitch-ideas
@@ -36,17 +37,23 @@ export async function pitchVideos(
     return [];
   }
 
-  const list = todo.map((p, i) => `${i + 1}. [${p.video_id}] "${p.title ?? ''}" (${p.channel_name ?? 'unknown channel'})`).join('\n');
+  const list = todo.map((p, i) => `${i + 1}. [${p.video_id}] "${p.title ?? ''}" (${p.channel_name ?? 'unknown channel'}, ${(p.views ?? 0).toLocaleString('en-US')} views)`).join('\n');
 
   const prompt = `You help one Shorts creator decide which viral Shorts from other channels are worth stealing the format of.
 
 ${who}${scan}
 
-Below are Shorts that beat their own channel's usual views. You only have the titles. For each one:
-- pitch: ONE line, under 90 characters, saying what THIS creator's version would be. Their subject, the other video's format. Written like a working title or a one-line premise, not advice. Never reuse the other video's subject.
-- fit: "yes" if this creator could film their version this week with what they already make, "stretch" if it would need a real change of subject or setup, "no" if it does not transfer to their channel at all.
+Below are Shorts that beat their own channel's usual views. You only have the title, the channel and the views. For each one:
 
-Be strict with fit. Most creators have one niche; a format from far outside it is a stretch at best. If a title is too vague to judge, give your best pitch and mark it "stretch".
+- fit:
+  "no" when there is nothing a creator can copy. A company announcing or advertising its own product, a customer story, a trailer. Views that come from who posted it and not from the idea. A meme or in-joke that only works on that channel. A title not in English. Also "no" when it does not transfer to this creator at all.
+  "yes" only when this creator could film their version this week with what they already make, and their viewers would click it.
+  "stretch" when it needs a real change of subject or setup, or the title is too vague to judge.
+  Be strict. Most of these should not be "yes".
+
+- pitch: ONE line, under 90 characters, the title THIS creator would post. Not advice, no hashtags.
+  Keep what made the original work: its promise and its shape. Point that at what this creator's viewers come for. When the original is already close to their subject, stay close and change only what has to change; do not reach for a distant topic just to be different. When it is far away, carry over only the shape.
+  Example of the move, from other fields: "How to copy any physique without a coach", for a cooking channel, becomes "How to copy any restaurant dish without a recipe".
 
 Shorts:
 ${list}
@@ -56,12 +63,14 @@ Respond with JSON only, one entry per Short, same ids:
 
 Never use an em-dash or en-dash, only the regular hyphen.`;
 
-  const raw = await callLLM(prompt + languageRule(await loadLanguage(supabase, userId)), { maxTokens: 2400 });
+  // The writer model since 2026-11-09: this line is the idea itself, and the
+  // bulk model was calling nearly everything a fit.
+  const raw = await callLLM(prompt + languageRule(await loadLanguage(supabase, userId)) + currentRule(), { maxTokens: 4000, tier: 'writer' });
   const parsed = parseModelJson(raw, 'pitch-ideas') as { ideas?: Array<{ id?: string; pitch?: string; fit?: string }> };
   const byId = new Map(todo.map(p => [p.video_id, p]));
 
   const rows = (parsed.ideas ?? [])
-    .filter(r => r.id && byId.has(r.id) && r.pitch)
+    .filter(r => r.id && byId.has(r.id) && r.pitch && !inventsVersion(r.pitch, byId.get(r.id)!.title ?? ''))
     .map(r => {
       const p = byId.get(r.id!)!;
       return {

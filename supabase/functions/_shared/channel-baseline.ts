@@ -34,6 +34,17 @@ export function isShort(item: any): boolean {
   return seconds !== null && seconds > 0 && seconds <= MAX_SHORT_SECONDS;
 }
 
+// A video can be under three minutes and still not be a Short: Google Cloud's
+// horizontal customer stories were getting in (Ivan, 2026-11-09). The API's
+// player dimensions give the shape; asked for with part=player and maxHeight.
+// No dimensions means no verdict, so it stays.
+// deno-lint-ignore no-explicit-any
+export function isVertical(item: any): boolean {
+  const w = Number(item.player?.embedWidth);
+  const h = Number(item.player?.embedHeight);
+  return !w || !h || h >= w;
+}
+
 export function median(nums: number[]): number {
   if (nums.length === 0) return 0;
   const sorted = [...nums].sort((a, b) => a - b);

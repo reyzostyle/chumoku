@@ -116,7 +116,7 @@ Plain text.`,
       console.error(`[voice] could not watch ${v.video_id}:`, e);
     }
   }
-  if (heard.length === 0) return null;
+  if (heard.length === 0) throw new Error('could not watch any of their Shorts');
 
   const raw = await callLLM(`Below are notes on how one creator talks in their own Shorts, including lines transcribed word for word.
 

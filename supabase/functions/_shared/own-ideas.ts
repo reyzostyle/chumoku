@@ -4,6 +4,7 @@ import { callLLM, searchWeb } from './llm.ts';
 import { parseModelJson } from './json.ts';
 import { loadBrain, brainBlock, type ChannelBrain } from './brain.ts';
 import { loadChannelScan, type ChannelScan } from './channel-scan.ts';
+import { currentRule } from './current.ts';
 
 // Ideas Chumoku finds for the creator itself (2026-10-27).
 //
@@ -123,7 +124,7 @@ ${before.length ? `Already suggested on earlier days, do not repeat these or nea
 
 Never use an em-dash or en-dash, only the regular hyphen.`;
 
-  const raw = await callLLM(prompt + languageRule(await loadLanguage(supabase, userId)), { maxTokens: 3500, tier: 'writer' });
+  const raw = await callLLM(prompt + languageRule(await loadLanguage(supabase, userId)) + currentRule(), { maxTokens: 3500, tier: 'writer' });
   const parsed = parseModelJson(raw, 'own-ideas') as {
     ideas?: Array<{ kind?: string; pitch?: string; premise?: string; hook?: string; source?: string | number; why?: string }>;
   };

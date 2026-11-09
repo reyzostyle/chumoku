@@ -252,8 +252,8 @@ export function AppShell({ activeTab, onTabChange, children }: AppShellProps) {
             a floating glass capsule, the page's own big title above. The
             sidebar and its menu stay for wide screens. */}
         <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
-             style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
-          <div className="pointer-events-auto flex items-center gap-1 p-1.5 rounded-full w-full max-w-[420px]"
+             style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
+          <div className="pointer-events-auto flex items-center gap-0.5 p-1 rounded-full w-full max-w-[360px]"
                style={{ background: 'rgba(28,28,30,0.72)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px) saturate(1.6)', WebkitBackdropFilter: 'blur(24px) saturate(1.6)', boxShadow: '0 10px 30px rgba(0,0,0,0.45)' }}>
             {MOBILE_TABS.map(t => {
               const on = activeTab === t.id;
@@ -262,12 +262,12 @@ export function AppShell({ activeTab, onTabChange, children }: AppShellProps) {
                 <button
                   key={t.id}
                   onClick={() => { onTabChange(t.id); window.dispatchEvent(new CustomEvent('chumoku:navigate', { detail: t.id })); }}
-                  className="flex-1 flex flex-col items-center gap-0.5 py-2 rounded-full transition-colors"
+                  className="flex-1 flex flex-col items-center py-1.5 rounded-full transition-colors"
                   style={{ background: on ? 'rgba(255,255,255,0.1)' : 'transparent', color: on ? 'var(--text)' : 'var(--text-muted)' }}
                   aria-current={on ? 'page' : undefined}
                 >
-                  <Icon className="w-[22px] h-[22px]" />
-                  <span className="text-[11px] font-medium">{t.label}</span>
+                  <Icon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium leading-3 mt-0.5">{t.label}</span>
                 </button>
               );
             })}

@@ -35,12 +35,15 @@ export interface SocialVideo {
 }
 
 const BASE = 'https://api.scrapecreators.com';
+// Paid requests made by this worker, read around a drop for idea_drop_stats.
+export const socialUsage = { requests: 0 };
 
 async function call(path: string, params: Record<string, string | undefined>): Promise<any> {
   const key = Deno.env.get('SCRAPECREATORS_API_KEY');
   if (!key) throw new Error('SCRAPECREATORS_API_KEY is not set');
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
+  socialUsage.requests++;
   const res = await fetch(`${BASE}${path}?${q}`, { headers: { 'x-api-key': key } });
   const text = await res.text();
   if (!res.ok) throw new Error(`ScrapeCreators ${path} ${res.status}: ${text.slice(0, 200)}`);

@@ -2,6 +2,7 @@ import { callLLM } from './llm.ts';
 import { watchVideo } from './analyze-video.ts';
 import { parseModelJson } from './json.ts';
 import { platformOf, videoSource } from './social.ts';
+import { currentRule } from './current.ts';
 
 // The two model passes behind taking someone else's Short and making it yours:
 // read what the video is and adapt it (enrich-competitor-video), then watch it
@@ -63,6 +64,7 @@ export async function extractConceptAndAdapt(
   profileBlock: string,
   scanBlock: string,
   niche: string,
+  chosen = '',
 ): Promise<{ concept: string; adapted_idea: string }> {
   const prompt = `You analyze competitor YouTube Shorts and extract the core concept, then adapt it for a different creator.
 
@@ -89,11 +91,11 @@ Extract three things, in this order. The order is the method, not a formatting p
    Do not return a list of titles. Do not return three alternatives. One idea, described.
 
 The adapted idea is where this usually goes wrong, so check it against all three of these before you write it:
-- The subject must come from THEIR channel, not from the competitor's. Swapping one noun in the competitor's topic is not adaptation. If the competitor's subject survives into your answer in any form, start again.
+${chosen ? `- The creator already picked this idea from a card: "${chosen}". Develop exactly that. Do not swap it for a different video.\n` : ''}- It has to be about what THEIR viewers come for. When the competitor's video is already close to their subject, stay close: keep its promise and shape and change only what has to change. When it is far away, carry only the mechanism.
 - They must plausibly be able to film it. Do not hand them a topic that needs expertise, footage, credentials or a job they do not have. ${niche ? `Their niche is "${niche}"` : 'They have not filled in a niche, so work entirely from what they publish'}, and their uploads above are what "their channel" means. Anything outside that is a wasted idea.
 - Ask yourself: could this title sit in their upload list without looking like it belongs to someone else? If not, it is wrong. Rewrite it.
 
-A competitor from a completely different niche is not a problem and is often the best case: the mechanism is what transfers, and one that arrives from another field is one their audience has not seen worn out. Carry the mechanism, never the subject.
+A competitor from a completely different niche is not a problem and is often the best case: the mechanism is what transfers, and one that arrives from another field is one their audience has not seen worn out.
 
 Focus on what made this specific video out-perform the channel's other uploads, not on generic advice. Never open with a hedge about not knowing their niche - you have their uploads, use them.
 
@@ -105,7 +107,7 @@ Rules:
   "concept": "...",
   "mechanism": "...",
   "adapted_idea": "..."
-}`;
+}${currentRule()}`;
 
   // `mechanism` is asked for and then thrown away. It exists to force the
   // separation between the move and the subject to actually happen: without it
@@ -205,7 +207,7 @@ Rules:
 - What you know about their channel is background. Use what fits this idea; do not drag in their recent topics or force their niche into a format that does not need it
 - Never: "In this video", "Let's dive in", "Here's the thing", "game-changer", "unlock", "level up", "ever wondered", "you won't believe", rhetorical triplets, or any line that sounds like an ad
 - No em-dash or en-dash, only regular hyphen (-)
-- Respond with JSON only, no markdown`;
+- Respond with JSON only, no markdown${currentRule()}`;
 
   const content = await watchVideo(
     await videoSource(videoId),
