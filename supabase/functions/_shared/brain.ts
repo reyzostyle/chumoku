@@ -142,7 +142,7 @@ ${stated}
 
 ## What they actually publish
 ${scanEvidence(scan)}
-${bestTitles ? `\nTheir most viewed videos of all time:\n${bestTitles}\n` : ''}${row?.social_summary ? `\n## How their TikToks and Reels did\n${row.social_summary}\n` : ''}${retentionEvidence(row?.retention_lessons as RetentionLessons | null)}${previous?.summary ? `
+${bestTitles ? `\nTheir most viewed videos of all time:\n${bestTitles}\n` : ''}${row?.social_summary ? `\n## How their TikToks and Reels did\n${row.social_summary}\n` : ''}${retentionEvidence(row?.retention_lessons as RetentionLessons | null)}${previous?.summary && !row?.channel_description?.trim() ? `
 ## The previous read (last week)
 ${previous.summary}
 Niche: ${previous.niche} | Format: ${previous.format}
@@ -154,7 +154,7 @@ These are true. Build around them; never contradict them.
 ` : ''}
 Describe what is STABLE across many uploads. A topic, joke, guest or format that shows up once, or only in the last few videos, is not the channel: do not name it in the profile and do not build rules around it. Rules and strengths have to hold for the next ten videos, not describe the last two.
 
-Use the uploads for how the channel is made and what has worked: format, voice, strengths, the view range. What they wrote about their channel decides its subject (Ivan, 2026-11-09: creators change direction, and old uploads kept pulling every idea back to the old topic). Where the uploads are about something else, write the summary, niche, audience and adapt_rules for what they say it is now. If they wrote nothing, the uploads decide everything. If there are no uploads, work from what they wrote and keep every claim to what it supports - do not invent a format, a voice or an audience out of one sentence.
+Use the uploads for how the channel is made and what has worked: format, voice, strengths, the view range. What they wrote about their channel decides its subject (Ivan, 2026-11-09: creators change direction, and old uploads kept pulling every idea back to the old topic). Where the uploads are about something else, write the summary, niche, audience and adapt_rules for what they say it is now. The niche is the subject in their words, even when a listed word fits the old uploads better. If they wrote nothing, the uploads decide everything. If there are no uploads, work from what they wrote and keep every claim to what it supports - do not invent a format, a voice or an audience out of one sentence.
 
 Pay attention to the view range. An idea that only works at a scale they are nowhere near is not useful to them, and neither is advice pitched at a level they are past.
 
