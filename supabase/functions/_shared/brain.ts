@@ -161,9 +161,9 @@ Pay attention to the view range. An idea that only works at a scale they are now
 Answer with JSON and nothing else:
 {
   "summary": "2-4 sentences, second person, addressed to the creator: what their channel is, who turns up for it, and where it stands. Concrete. No praise, no filler, no 'you seem to be'.",
-  "niche": "the subject, lowercase. Use one of these words where one honestly fits, because it is the key channels get grouped and benchmarked by: ${NICHES.join(', ')}. Add a second, comma-separated, only when the channel genuinely straddles two. If none of them fit, write your own 1-3 words.",
+  "niche": "${row?.channel_description?.trim() ? 'the subject in their own words from what they wrote, lowercase, 1-4 words. Do not use a generic category.' : `the subject, lowercase. Use one of these words where one honestly fits, because it is the key channels get grouped and benchmarked by: ${NICHES.join(', ')}. Add a second, comma-separated, only when the channel genuinely straddles two. If none of them fit, write your own 1-3 words.`}",
   "format": "the shape of a typical video: length, whether they are on camera, what the footage is, how it is edited, what the recurring structure is",
-  "audience": "who watches, in one sentence - age, why they clicked, what they came for",
+  "audience": "who ${row?.channel_description?.trim() ? 'this channel is for, given what they wrote it is about now' : 'watches'}, in one sentence - age, why they clicked, what they came for",
   "voice": "how it sounds and reads: pace, tone, humour, on-screen text style",
   "strengths": ["2-4 things this channel already does that work, each specific enough to be worth repeating"],
   "watch_outs": ["2-4 things to avoid when writing for them, at their level - formats they cannot execute, scales they are nowhere near, habits the uploads show going wrong"],
