@@ -17,6 +17,8 @@ ITEMS = {
   'nYpN1D06LrM': (False, .5, .15), 'qvFEJ5ksTZc': (False, .5, .15), 'dn627jC3Kf0': (False, .5, .2),
   'pz3UTWk4R-o': (False, .5, .25), 'woGWeN2vsuY': (False, .5, .4), 'nGPFYc6eTKw': (False, .5, .3),
   '1d4WkrDhKfg': (False, .5, .25), 'PTd98UnJnnU': (False, .5, .3),
+  '9q5v9oir3UE': (False, .5, .3), 'XL2wnO2w8GE': (False, .5, .3), 'SeyUBsB-LSc': (False, .5, .3),
+  'QKtxN2ifkQ8': (False, .5, .3), 'qVMdwstXVHY': (False, .5, .3), 'jyJ35knlVKc': (False, .5, .3),
 }
 out_dir = 'public/landing'
 sheet = Image.new('RGB', (240*len(ITEMS), 300))

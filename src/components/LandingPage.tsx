@@ -21,7 +21,9 @@ import { CompetitorVideoCard } from './CompetitorVideoCard';
 import { BillingSeg } from './BillingSeg';
 import { Collapse } from './Page';
 import type { FeedItem } from '../lib/competitors';
-import { Head, WorkflowGrid, BrainScan } from './LandingMotion';
+import { Head } from './LandingMotion';
+import { LandingStory } from './LandingStory';
+import { Claude } from './BrandIcons';
 
 // ─── Surface ─────────────────────────────────────────────────────────────────
 // This page used to run on three bespoke `glass` objects: stacked white
@@ -384,6 +386,8 @@ const DEMO: FeedItem[] = [
 // the resolution of YouTube's hqdefault after cropping, with the text on them.
 const demoThumb = (id: string) => `/landing/${id}.webp`;
 
+const STORY = DEMO.map(d => ({ id: d.video_id, source: d.video_title ?? '', pitch: (d.idea as { pitch: string }).pitch, multiple: d.outlier_score ?? 0, channel: d.channel_name ?? '' }));
+
 const noop = () => {};
 
 // Under the field: real ideas drifting past, the way the Ideas tab fills up.
@@ -406,35 +410,35 @@ function HeroShelf() {
   );
 }
 
-function IdeasGrid() {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-      {DEMO.slice(0, 4).map((item, i) => (
-        <Reveal key={item.video_id} delay={i * 70}>
-          <CompetitorVideoCard item={item} thumb={demoThumb(item.video_id)} readOnly onOpen={noop} onSave={noop} onDismiss={noop} />
-        </Reveal>
-      ))}
-    </div>
-  );
-}
-
 // A sample conversation: what a connected Claude would do with one question.
-function ClaudeDemo() {
+function ClaudePanel() {
   return (
-    <div className="p-5 sm:p-6 space-y-4 max-w-2xl mx-auto" style={plate}>
-      <p className="ml-auto w-fit px-4 py-2 rounded-[var(--r-sm)] text-[14px]" style={{ background: 'var(--bg-raised-hover)', color: 'var(--text)' }}>
-        What should I film tomorrow?
-      </p>
-      <div className="space-y-1">
-        <p className="label-mono">Chumoku · read your last 30 videos</p>
-        <p className="label-mono">Chumoku · found today&apos;s ideas</p>
+    <div className="claude-panel px-5 py-10 sm:px-12 sm:py-14">
+      <div className="flex items-center justify-center gap-3.5 mb-7">
+        <img src="/chumoku-mark.png" alt="Chumoku" className="h-9 w-auto" />
+        <span className="text-[20px]" style={{ color: 'var(--text-faint)' }}>+</span>
+        <Claude className="w-10 h-10" style={{ color: '#D97757' }} />
       </div>
-      <p className="text-[14.5px] leading-relaxed" style={{ color: 'var(--text)' }}>
-        Your how-tos are beating your usual by 4x, and your opinion videos are under it. Film this one:
-      </p>
-      <p className="px-4 py-3 text-[15px] font-medium" style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-sm)', color: 'var(--text)' }}>
-        How to copy any viral video with AI
-      </p>
+      <div className="text-center">
+        <span className="inline-block px-3 py-1 rounded-full text-[12px] font-medium" style={{ background: 'rgba(217,119,87,0.16)', color: '#E8A48C' }}>MCP coming soon</span>
+        <h2 className="story-title mt-4 text-balance">Chumoku in Claude.</h2>
+      </div>
+      <div className="max-w-lg mx-auto mt-9 space-y-3.5">
+        <p className="ml-auto w-fit px-4 py-2 rounded-[var(--r-sm)] text-[14px]" style={{ background: 'rgba(255,255,255,0.09)', color: 'var(--text)' }}>
+          What should I film tomorrow?
+        </p>
+        <div className="space-y-1">
+          {['read your last 30 videos', 'checked your competitors', "found today's ideas"].map(t => (
+            <p key={t} className="flex items-center gap-2 text-[12.5px]" style={{ color: 'var(--text-muted)' }}>
+              <span className="w-1 h-1 rounded-full" style={{ background: '#D97757' }} />{t}
+            </p>
+          ))}
+        </div>
+        <p className="text-[15px] leading-relaxed" style={{ color: 'var(--text)' }}>Your how-tos beat your usual by 4x. Film this one:</p>
+        <p className="px-4 py-3 text-[15.5px] font-medium rounded-[var(--r-sm)]" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+          How to copy any viral video with AI
+        </p>
+      </div>
     </div>
   );
 }
@@ -823,43 +827,16 @@ export function LandingPage() {
           </div>
         </header>
 
-        {/* ── Product ─────────────────────────────────────────────────────────
-            The workflow, step by step, each step a small piece of the real
-            interface doing its job as it comes into view. */}
-        <section className={`${SECTION} pt-8 pb-16 sm:pb-24`}>
-          <Head
-            id="product"
-            title="Four steps."
-          />
-          <WorkflowGrid />
-        </section>
-
-        {/* ── Competitors ─────────────────────────────────────────────────── */}
-        <section className={`${SECTION} pb-16 sm:pb-24`}>
-          <Head
-            title="Your version,"
-            muted="not their title."
-          />
-          <IdeasGrid />
-        </section>
-
-        {/* ── The brain ───────────────────────────────────────────────────── */}
-        {/* Sits directly under Ideas because it is the answer to the obvious
-            objection: an idea "adapted for your channel" is worth nothing if
-            the tool does not know the channel. */}
-        <section className={`${SECTION} pb-16 sm:pb-24`}>
-          <Head
-            title="It learns your channel."
-          />
-          <BrainScan />
+        {/* ── The story ─────────────────────────────────────────────────────── */}
+        <section className={SECTION}>
+          <LandingStory ideas={STORY} />
         </section>
 
         {/* ── Claude ──────────────────────────────────────────────────────────
             Not built yet, so it says so. Ideas, scripts and channel data only:
             nothing about making video here (Everygen contract, clause 6). */}
-        <section className={`${SECTION} pb-16 sm:pb-24`}>
-          <Head eyebrow="Coming soon" title="Your channel," muted="inside Claude." />
-          <Reveal><ClaudeDemo /></Reveal>
+        <section className={`${SECTION} pt-8 pb-16 sm:pb-24`}>
+          <Reveal><ClaudePanel /></Reveal>
         </section>
 
         {/* ── Pricing ─────────────────────────────────────────────────────── */}
@@ -883,20 +860,6 @@ export function LandingPage() {
             ))}
           </div>
 
-          {/* The free tier as a row, not a third card: it is the contrast that
-              makes the paid cards land, but equal card weight would sell it as
-              a real option. Free has no credits since 2026-10-28
-              (CREDIT_LIMITS.free = 0): the daily ideas, nothing else. */}
-          <Reveal delay={140}>
-            <div
-              className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1.5"
-              style={{ border: '1px dashed var(--line-strong)', borderRadius: 'var(--r-md)' }}
-            >
-              <span className="text-[13.5px] font-medium" style={{ color: 'var(--text)' }}>Free</span>
-              <span className="text-[13.5px]" style={{ color: 'var(--text-muted)' }}>Ten new ideas every morning</span>
-              <span className="label-mono sm:ml-auto">3 tracked channels</span>
-            </div>
-          </Reveal>
         </section>
 
         {/* ── FAQ ─────────────────────────────────────────────────────────── */}

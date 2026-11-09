@@ -993,3 +993,17 @@ button.row:active,
   .ret-stats > div:nth-child(n + 3) { border-top: none; }
   .ret-stats > div + div { border-left: 1px solid var(--line); }
 }
+
+/* The landing's three scenes and the Claude panel: the biggest type on the page. */
+.story-title {
+  font-size: clamp(2.25rem, 1.3rem + 4vw, 4rem);
+  line-height: 1.04;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  color: var(--text);
+}
+.claude-panel {
+  background: radial-gradient(110% 75% at 50% 0%, rgba(217, 119, 87, 0.26), transparent 62%), #12100F;
+  border: 1px solid rgba(217, 119, 87, 0.28);
+  border-radius: var(--r-lg);
+}
