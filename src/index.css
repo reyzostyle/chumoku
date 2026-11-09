@@ -447,6 +447,7 @@ input, textarea, select {
   border-radius: var(--r-md);
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
+.row:focus-within { border-color: var(--line-strong); }
 /* A row that is only telling you something (the landing page's three moves)
    keeps the plate and drops the hover, because nothing happens when it is
    clicked and a control that lies about that is worse than a paragraph. */

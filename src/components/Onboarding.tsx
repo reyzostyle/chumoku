@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { FUNCTIONS_URL, getSessionToken, supabase } from '../lib/supabase';
 import { callFunction } from '../lib/competitors';
 import { useAuth } from '../contexts/AuthContext';
-import { RefreshOutlineIcon as Loader2 } from '@solar-icons/react';
-import { Youtube } from './BrandIcons';
+import { RefreshOutlineIcon as Loader2, AltArrowLeftOutlineIcon as Back, CloseCircleOutlineIcon as Remove } from '@solar-icons/react';
+import { Youtube, TikTok, Instagram, Check } from './BrandIcons';
+import { Button, Row } from './Page';
 import { requestBrain, CHANNEL_GOALS } from '../lib/brain';
 
 // The first minutes after signing up.
@@ -12,13 +13,16 @@ import { requestBrain, CHANNEL_GOALS } from '../lib/brain';
 // level, niche and voice better than anyone describes them. 2026-11-09 (Ivan):
 // uploads cannot say where you are heading, who you look up to or what you want
 // from it, and the ideas showed it: months of old uploads kept pulling them back
-// to a topic he had left. So: one screen for the things only the creator knows,
-// then their Shorts land while the brain is read, then ideas.
+// to a topic he had left. So four short pages for the things only the creator
+// knows, built like the rest of the app (the iOS onboarding's layout: title at
+// the top, the one action at the bottom, plates and rows between), then their
+// Shorts land while the brain is read, then ideas.
 
 const STORAGE_KEY = 'chumoku_onboarding';
 const MAX_INSPIRATIONS = 3; // the free plan's tracked-channel limit
 
-type Step = 'setup' | 'reading' | 'ready';
+type Step = 'accounts' | 'inspirations' | 'goal' | 'about' | 'reading' | 'ready';
+const PAGES: Step[] = ['accounts', 'inspirations', 'goal', 'about'];
 interface Draft { tiktok: string; instagram: string; links: string[]; goal: string; about: string }
 const EMPTY: Draft = { tiktok: '', instagram: '', links: [], goal: '', about: '' };
 
@@ -30,17 +34,11 @@ function loadDraft(): Draft {
   } catch { return EMPTY; }
 }
 
-const accent = 'var(--accent)';
-const onAccent = 'var(--on-accent)';
-const cardBase: React.CSSProperties = {
-  background:
-    'linear-gradient(rgba(255,255,255,0.04), rgba(255,255,255,0.04)), linear-gradient(180deg, rgba(var(--glass-tint-rgb),0.05), rgba(var(--glass-tint-rgb),0.03))',
-  border: '1px solid rgba(255,255,255,0.08)',
-};
+const rowInput = 'flex-1 min-w-0 bg-transparent text-[16px] focus:outline-none placeholder:text-[var(--text-faint)]';
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const { user, signOut } = useAuth();
-  const [step, setStep] = useState<Step>('setup');
+  const [step, setStep] = useState<Step>('accounts');
   const [draft, setDraft] = useState<Draft>(loadDraft);
   const [link, setLink] = useState('');
   const [failed, setFailed] = useState<string[]>([]);
@@ -174,128 +172,146 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     onDone();
   };
 
-  const field = 'w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none';
-  const label = 'text-[13px] font-medium mb-2.5';
-  const primary = 'w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-40';
+  const page = PAGES.indexOf(step);
+  const go = (to: Step) => { setError(''); setStep(to); };
+  const hasAccount = !!ytChannel || !!draft.tiktok.trim() || !!draft.instagram.trim();
 
   return (
-    <div className="min-h-screen flex flex-col items-center sm:justify-center px-4 py-10" style={{ background: 'rgb(var(--surface-rgb))' }}>
-      <div className="w-full max-w-md">
+    <div className="min-h-[100dvh] flex justify-center px-6" style={{ background: 'var(--bg-app)' }}>
+      <div key={step} className="animate-tab-in w-full max-w-md min-h-[100dvh] flex flex-col pb-6 sm:pb-12">
 
-        {step === 'setup' && (
-          <div className="space-y-7">
-            <h1 className="text-2xl font-bold text-white text-balance">Set up your ideas</h1>
-
-            <div>
-              <p className={label} style={{ color: 'var(--text-muted)' }}>Your accounts</p>
-              <div className="space-y-2">
-                <button onClick={ytChannel ? undefined : connectYouTube} disabled={!!ytChannel}
-                  className={`${field} flex items-center gap-2.5 text-left`} style={cardBase}>
-                  <Youtube className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 truncate">{ytChannel ?? 'YouTube'}</span>
-                  <span style={{ color: ytChannel ? 'var(--text-faint)' : 'var(--text)' }}>{ytChannel ? 'Connected' : 'Connect'}</span>
-                </button>
-                <input value={draft.tiktok} onChange={e => set({ tiktok: e.target.value })} placeholder="TikTok @name"
-                  autoCapitalize="none" autoCorrect="off" className={field} style={cardBase} />
-                <input value={draft.instagram} onChange={e => set({ instagram: e.target.value })} placeholder="Instagram @name"
-                  autoCapitalize="none" autoCorrect="off" className={field} style={cardBase} />
-              </div>
-            </div>
-
-            <div>
-              <p className={label} style={{ color: 'var(--text-muted)' }}>Who you look up to</p>
-              {draft.links.length < MAX_INSPIRATIONS && (
-                <div className="flex gap-2">
-                  <input value={link} onChange={e => setLink(e.target.value)} placeholder="Link to a channel or profile"
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
-                    autoCapitalize="none" autoCorrect="off" className={`${field} flex-1 min-w-0`} style={cardBase} />
-                  <button onClick={addLink} disabled={!link.trim()} className="px-4 rounded-xl text-sm font-medium text-white disabled:opacity-40" style={cardBase}>Add</button>
-                </div>
-              )}
-              {draft.links.length > 0 && (
-                <div className={`flex flex-wrap gap-2 ${draft.links.length < MAX_INSPIRATIONS ? 'mt-2' : ''}`}>
-                  {draft.links.map(l => (
-                    <button key={l} className="chip max-w-full truncate" data-on="true" aria-label={`Remove ${l}`}
-                      onClick={() => set({ links: draft.links.filter(x => x !== l) })}>
-                      {l.replace(/^https?:\/\/(www\.)?/, '')} ×
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <p className={label} style={{ color: 'var(--text-muted)' }}>What you want</p>
-              <div className="flex flex-wrap gap-2">
-                {CHANNEL_GOALS.map(g => (
-                  <button key={g.value} className="chip" data-on={draft.goal === g.value} onClick={() => set({ goal: draft.goal === g.value ? '' : g.value })}>
-                    {g.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className={label} style={{ color: 'var(--text-muted)' }}>What your channel is about</p>
-              <textarea value={draft.about} onChange={e => set({ about: e.target.value })}
-                placeholder="What you make now, in your own words" rows={3}
-                className={`${field} resize-none leading-relaxed`} style={cardBase} />
-            </div>
-
-            <button onClick={start} disabled={!canStart} className={primary} style={{ background: accent, color: onAccent }}>
-              Continue
+        <div className="h-11 mt-4 sm:mt-12 flex items-center justify-between flex-shrink-0">
+          {page > 0 ? (
+            <button onClick={() => go(PAGES[page - 1])} aria-label="Back" className="h-11 w-11 -ml-2 flex items-center" style={{ color: 'var(--text)' }}>
+              <Back className="w-5 h-5" />
             </button>
-          </div>
+          ) : <img src="/chumoku-mark.png" alt="" className="h-6 w-auto" />}
+          {page >= 0 && <span className="font-mono text-[11px]" style={{ color: 'var(--text-faint)' }}>{page + 1} of {PAGES.length}</span>}
+        </div>
+
+        {step === 'accounts' && (
+          <>
+            <h1 className="t-title text-balance mt-7 mb-7" style={{ color: 'var(--text)' }}>Your accounts</h1>
+            <div className="space-y-2">
+              <Row
+                icon={<Youtube className="w-[18px] h-[18px]" />}
+                title={ytChannel ?? 'YouTube'}
+                meta={ytChannel ? <Check className="w-4 h-4" /> : undefined}
+                arrow={ytChannel ? undefined : <span className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>Connect</span>}
+                onClick={ytChannel ? undefined : connectYouTube}
+              />
+              <label className="row cursor-text">
+                <span className="row-icon"><TikTok className="w-[17px] h-[17px]" /></span>
+                <input value={draft.tiktok} onChange={e => set({ tiktok: e.target.value })} placeholder="TikTok username" aria-label="TikTok username"
+                  autoCapitalize="none" autoCorrect="off" className={rowInput} style={{ color: 'var(--text)' }} />
+              </label>
+              <label className="row cursor-text">
+                <span className="row-icon"><Instagram className="w-[18px] h-[18px]" /></span>
+                <input value={draft.instagram} onChange={e => set({ instagram: e.target.value })} placeholder="Instagram username" aria-label="Instagram username"
+                  autoCapitalize="none" autoCorrect="off" className={rowInput} style={{ color: 'var(--text)' }} />
+              </label>
+            </div>
+            {error && <p className="mt-3 t-small" style={{ color: 'var(--danger)' }}>{error}</p>}
+            <div className="mt-auto pt-8">
+              <Button variant="primary" className="w-full" disabled={!hasAccount} onClick={() => go('inspirations')}>Continue</Button>
+              <Button variant="text" className="w-full mt-2" onClick={() => go('inspirations')}>I don&apos;t have a channel yet</Button>
+            </div>
+          </>
+        )}
+
+        {step === 'inspirations' && (
+          <>
+            <h1 className="t-title text-balance mt-7 mb-7" style={{ color: 'var(--text)' }}>Who do you look up to?</h1>
+            <div className="space-y-2">
+              {draft.links.map(l => (
+                <div key={l} className="row">
+                  <span className="flex-1 min-w-0 truncate text-[15px] font-medium" style={{ color: 'var(--text)' }}>{l.replace(/^https?:\/\/(www\.)?/, '')}</span>
+                  <button aria-label={`Remove ${l}`} onClick={() => set({ links: draft.links.filter(x => x !== l) })} style={{ color: 'var(--text-faint)' }}>
+                    <Remove className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+              {draft.links.length < MAX_INSPIRATIONS && (
+                <form className="row" onSubmit={e => { e.preventDefault(); addLink(); }}>
+                  <input value={link} onChange={e => setLink(e.target.value)} placeholder="Link to their channel" aria-label="Link to their channel"
+                    autoCapitalize="none" autoCorrect="off" className={rowInput} style={{ color: 'var(--text)' }} />
+                  {link.trim() && <button type="submit" className="text-[13px] font-medium" style={{ color: 'var(--text)' }}>Add</button>}
+                </form>
+              )}
+            </div>
+            <div className="mt-auto pt-8">
+              <Button variant="primary" className="w-full" disabled={!draft.links.length && !link.trim()} onClick={() => { addLink(); go('goal'); }}>Continue</Button>
+              <Button variant="text" className="w-full mt-2" onClick={() => go('goal')}>Skip</Button>
+            </div>
+          </>
+        )}
+
+        {step === 'goal' && (
+          <>
+            <h1 className="t-title text-balance mt-7 mb-7" style={{ color: 'var(--text)' }}>What do you want?</h1>
+            <div className="space-y-2">
+              {CHANNEL_GOALS.map(g => (
+                <Row key={g.value} title={g.label}
+                  meta={draft.goal === g.value ? <Check className="w-4 h-4" /> : undefined}
+                  onClick={() => { set({ goal: g.value }); go('about'); }} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {step === 'about' && (
+          <>
+            <h1 className="t-title text-balance mt-7 mb-7" style={{ color: 'var(--text)' }}>What is your channel about?</h1>
+            <textarea value={draft.about} onChange={e => set({ about: e.target.value })} rows={5} autoFocus
+              placeholder="In your own words" aria-label="What your channel is about"
+              className="w-full p-4 text-[16px] leading-relaxed resize-none focus:outline-none focus:border-[var(--line-strong)] placeholder:text-[var(--text-faint)]"
+              style={{ background: 'var(--bg-raised)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', color: 'var(--text)' }} />
+            {error && <p className="mt-3 t-small" style={{ color: 'var(--danger)' }}>{error}</p>}
+            <div className="mt-auto pt-8">
+              <Button variant="primary" className="w-full" disabled={!canStart} onClick={start}>Continue</Button>
+            </div>
+          </>
         )}
 
         {step === 'reading' && (
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-2 text-balance">Reading your channel</h1>
-            <p className="text-sm animate-pulse" style={{ color: 'var(--text-muted)' }}>
-              {thumbs.length ? 'Working out what works for you…' : 'Looking at your Shorts…'}
+          <>
+            <h1 className="t-title mt-7" style={{ color: 'var(--text)' }}>Reading your channel</h1>
+            <p className="mt-2 text-[15px] animate-pulse" style={{ color: 'var(--text-muted)' }}>
+              {thumbs.length ? 'Working out what works for you' : 'Looking at your Shorts'}
             </p>
             <div className="grid grid-cols-3 gap-2 mt-7">
               {thumbs.map(src => (
-                <div key={src} className="aspect-[9/16] rounded-xl overflow-hidden animate-fade-in" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div key={src} className="aspect-[9/16] rounded-xl overflow-hidden animate-fade-in" style={{ background: 'var(--bg-raised)' }}>
                   <img src={src} alt="" className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
-          </div>
+          </>
         )}
 
         {step === 'ready' && (
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-5 text-balance">Got it</h1>
-            {failed.length > 0 && (
-              <p className="mb-4 text-sm" style={{ color: 'var(--text-muted)' }}>
-                Could not add {failed.join(', ')}. You can try again in Settings.
-              </p>
-            )}
+          <>
+            <h1 className="t-title text-balance mt-7 mb-7" style={{ color: 'var(--text)' }}>Got it</h1>
             {summary && (
-              <>
-                <div className="rounded-2xl px-5 py-4 text-sm leading-relaxed text-white" style={cardBase}>{summary}</div>
-                <p className="mt-2 text-xs" style={{ color: 'var(--text-faint)' }}>
-                  Every idea and script is written against this. Change it any time in Settings.
-                </p>
-              </>
+              <div className="p-4 text-[15px] leading-relaxed" style={{ background: 'var(--bg-raised)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', color: 'var(--text)' }}>
+                {summary}
+              </div>
             )}
-            <button onClick={finish} disabled={saving} className={`${primary} mt-8`} style={{ background: accent, color: onAccent }}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />} See today&apos;s ideas
-            </button>
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-4 text-center">
-            <p className="text-red-400 text-sm">{error}</p>
-            <button
-              onClick={() => { localStorage.removeItem(STORAGE_KEY); signOut(); }}
-              className="mt-2 text-xs text-gray-500 hover:text-gray-300 underline decoration-gray-700 underline-offset-2 transition-colors"
-            >
-              Sign out
-            </button>
-          </div>
+            {failed.length > 0 && (
+              <p className="mt-3 t-small" style={{ color: 'var(--text-muted)' }}>Could not add {failed.join(', ')}</p>
+            )}
+            {error && (
+              <div className="mt-3">
+                <p className="t-small" style={{ color: 'var(--danger)' }}>{error}</p>
+                <Button variant="text" className="mt-1" onClick={() => { localStorage.removeItem(STORAGE_KEY); signOut(); }}>Sign out</Button>
+              </div>
+            )}
+            <div className="mt-auto pt-8">
+              <Button variant="primary" className="w-full" disabled={saving} onClick={finish}>
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />} See today&apos;s ideas
+              </Button>
+            </div>
+          </>
         )}
       </div>
     </div>
