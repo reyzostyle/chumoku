@@ -1004,6 +1004,7 @@ button.row:active,
 }
 .claude-panel {
   background: radial-gradient(110% 75% at 50% 0%, rgba(217, 119, 87, 0.26), transparent 62%), #12100F;
-  border: 1px solid rgba(217, 119, 87, 0.28);
+  background-clip: padding-box;
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-lg);
 }

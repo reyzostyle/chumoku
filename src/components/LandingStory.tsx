@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useInView } from './LandingMotion';
 
-// The middle of the landing (2026-11-09, Ivan): less "four steps", less text,
-// fewer plates. Three scenes that show the thing instead of describing it: it
-// watches your channel, it knows who is winning, you wake up with ideas.
+// The middle of the landing (2026-11-09, Ivan): it watches your channel, it
+// saves you the scrolling, nothing new gets past you, you know what to film.
+// Thumbnails stay in the hero and the first scene; the rest is type and one
+// real card, so the page does not turn into a wall of previews.
 //
-// Every number is real (the Ideas pool), and every scene renders its finished
-// state until JavaScript has run and it is on screen.
+// Every scene renders its finished state until JavaScript has run and it is on
+// screen.
 
 const thumb = (id: string) => `/landing/${id}.webp`;
-
-export interface StoryIdea { id: string; source: string; pitch: string; multiple: number; channel: string }
 
 // One creator's latest Shorts with their real views and multiples.
 const UPLOADS = [
@@ -30,8 +29,8 @@ function Scene({ id, title, muted, flip, children }: {
   const shown = inView !== false;
   return (
     <div ref={ref} id={id} className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center py-12 sm:py-20 scroll-mt-16">
-      <h2 className={`story-title text-balance ${flip ? 'lg:order-2' : ''}`}
-          style={{ opacity: shown ? 1 : 0, transform: shown ? 'none' : 'translateY(14px)', transition: 'opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1)' }}>
+      <h2 className={`display text-balance ${flip ? 'lg:order-2' : ''}`}
+          style={{ color: 'var(--text)', opacity: shown ? 1 : 0, transform: shown ? 'none' : 'translateY(14px)', transition: 'opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1)' }}>
         {title} <span style={{ color: 'var(--text-muted)' }}>{muted}</span>
       </h2>
       <div className={flip ? 'lg:order-1' : ''}>{children}</div>
@@ -72,67 +71,76 @@ function Watching() {
   );
 }
 
-// The creators around you, drawn in one by one.
-function Rivals({ ideas }: { ideas: StoryIdea[] }) {
-  const { ref, inView } = useInView<HTMLDivElement>(0.4);
+// What it costs to do this by hand, crossed out as you reach it.
+function Scrolling() {
+  const { ref, inView } = useInView<HTMLDivElement>(0.5);
   const shown = inView !== false;
-  const nodes = ideas.slice(0, 7).map((d, i, all) => {
-    const a = (i / all.length) * Math.PI * 2 - Math.PI / 2;
-    return { ...d, x: 50 + Math.cos(a) * 39, y: 50 + Math.sin(a) * 39, size: i % 2 ? 19 : 24 };
-  });
   return (
-    <div ref={ref} className="relative aspect-square w-full max-w-[420px] mx-auto">
-      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" aria-hidden="true">
-        {nodes.map((n, i) => (
-          <line key={n.id} x1="50" y1="50" x2={n.x} y2={n.y} stroke="rgba(255,255,255,0.16)" strokeWidth="0.25"
-                pathLength={1} strokeDasharray="1" strokeDashoffset={shown ? 0 : 1}
-                style={{ transition: `stroke-dashoffset .6s ease ${i * 120}ms` }} />
-        ))}
-      </svg>
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[17%] aspect-square rounded-full flex items-center justify-center"
-           style={{ background: 'var(--accent)' }}>
-        <img src="/chumoku-mark.png" alt="" className="w-[58%] h-auto invert" />
-      </div>
-      {nodes.map((n, i) => (
-        <div key={n.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${n.x}%`, top: `${n.y}%`, width: `${n.size}%` }}>
-          <div className="relative" style={{ opacity: shown ? 1 : 0, transform: shown ? 'none' : 'scale(.6)', transition: `opacity .45s ease ${200 + i * 120}ms, transform .55s cubic-bezier(.2,1.3,.4,1) ${200 + i * 120}ms` }}>
-            <img src={thumb(n.id)} alt="" loading="lazy" className="w-full aspect-square rounded-full object-cover object-top" />
-            <span className="absolute -right-1 -bottom-1 px-1.5 py-px rounded-full text-[11px] font-medium tabular-nums"
-                  style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>{n.multiple}×</span>
-          </div>
+    <div ref={ref} className="py-16 sm:py-28 text-center">
+      <p className="story-title" style={{ color: 'var(--text-faint)' }}>
+        <span className="relative inline-block">
+          Hours of scrolling.
+          <span aria-hidden="true" className="absolute left-0 right-0 top-[54%] h-[3px] origin-left"
+                style={{ background: 'var(--text-muted)', transform: `scaleX(${shown ? 1 : 0})`, transition: 'transform .7s cubic-bezier(.6,0,.2,1) .25s' }} />
+        </span>
+      </p>
+      <p className="story-title mt-2" style={{ color: 'var(--text)', opacity: shown ? 1 : 0, transition: 'opacity .6s ease .8s' }}>Ten ideas at 9:00.</p>
+    </div>
+  );
+}
+
+// Real finds from the daily research, with the idea each one became.
+const NEWS = [
+  { date: 'Nov 5', what: 'Cursor live app deployment', idea: 'Stop keeping your builds on localhost' },
+  { date: 'Oct 29', what: 'YouTube originality update', idea: 'YouTube just killed faceless clip channels' },
+  { date: 'Oct 28', what: 'Shorts algorithm shift', idea: 'The 2-second rule killing your Shorts feed' },
+];
+
+function News() {
+  const { ref, inView } = useInView<HTMLDivElement>(0.3);
+  const shown = inView !== false;
+  return (
+    <div ref={ref} style={{ borderTop: '1px solid var(--line)' }}>
+      {NEWS.map((n, i) => (
+        <div key={n.date} className="py-4" style={{ borderBottom: '1px solid var(--line)', opacity: shown ? 1 : 0, transform: shown ? 'none' : 'translateY(8px)', transition: `opacity .5s ease ${i * 140}ms, transform .5s ease ${i * 140}ms` }}>
+          <p className="label-mono">{n.date} · {n.what}</p>
+          <p className="mt-1.5 text-[17px] sm:text-[19px] font-medium tracking-tight" style={{ color: 'var(--text)' }}>{n.idea}</p>
         </div>
       ))}
     </div>
   );
 }
 
-// One after another: what blew up for them, and what you film.
-function Morning({ ideas }: { ideas: StoryIdea[] }) {
-  const { ref, inView } = useInView<HTMLDivElement>(0.4);
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    if (inView !== true || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => setI(n => (n + 1) % ideas.length), 2800);
-    return () => clearInterval(t);
-  }, [inView, ideas.length]);
-  const d = ideas[i];
+// One idea from the app, and the words it turns into.
+const SCRIPT = [
+  "There's a name for coaches who post AI advice.",
+  'It is called not having an opinion.',
+  'Your clients can tell.',
+  'Here is the one thing I changed.',
+];
+
+function Filming({ card }: { card: React.ReactNode }) {
+  const { ref, inView } = useInView<HTMLDivElement>(0.3);
+  const shown = inView !== false;
   return (
-    <div ref={ref} key={d.id} className="animate-fade-in flex items-center gap-4 sm:gap-6">
-      <div className="relative w-[30%] max-w-[150px] flex-shrink-0 aspect-[4/5] overflow-hidden rounded-2xl">
-        <img src={thumb(d.id)} alt="" className="w-full h-full object-cover" />
-        <span className="absolute left-2 bottom-2 px-2 py-0.5 rounded-full text-[12px] font-medium tabular-nums" style={{ background: 'rgba(0,0,0,0.6)', color: '#fff' }}>{d.multiple}×</span>
+    <div ref={ref} className="flex items-start gap-4 sm:gap-6 max-w-lg lg:ml-auto">
+      <div className="w-[46%] max-w-[210px] flex-shrink-0">{card}</div>
+      <div className="space-y-2.5 pt-1">
+        {SCRIPT.map((l, i) => (
+          <p key={l} className="text-[14.5px] sm:text-[16px] leading-snug" style={{ color: i ? 'var(--text-muted)' : 'var(--text)', opacity: shown ? 1 : 0, transition: `opacity .5s ease ${300 + i * 420}ms` }}>{l}</p>
+        ))}
       </div>
-      <p className="text-[clamp(1.35rem,1rem+1.5vw,2rem)] font-medium leading-tight tracking-tight text-balance" style={{ color: 'var(--text)' }}>{d.pitch}</p>
     </div>
   );
 }
 
-export function LandingStory({ ideas }: { ideas: StoryIdea[] }) {
+export function LandingStory({ card }: { card: React.ReactNode }) {
   return (
     <div>
       <Scene id="product" title="It watches" muted="everything you post."><Watching /></Scene>
-      <Scene flip title="It knows who is" muted="winning your niche."><Rivals ideas={ideas} /></Scene>
-      <Scene title="You wake up" muted="knowing what to film."><Morning ideas={ideas} /></Scene>
+      <Scrolling />
+      <Scene title="Nothing new" muted="gets past you."><News /></Scene>
+      <Scene title="You know" muted="what to film."><Filming card={card} /></Scene>
     </div>
   );
 }

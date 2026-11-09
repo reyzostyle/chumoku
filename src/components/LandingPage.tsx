@@ -386,8 +386,6 @@ const DEMO: FeedItem[] = [
 // the resolution of YouTube's hqdefault after cropping, with the text on them.
 const demoThumb = (id: string) => `/landing/${id}.webp`;
 
-const STORY = DEMO.map(d => ({ id: d.video_id, source: d.video_title ?? '', pitch: (d.idea as { pitch: string }).pitch, multiple: d.outlier_score ?? 0, channel: d.channel_name ?? '' }));
-
 const noop = () => {};
 
 // Under the field: real ideas drifting past, the way the Ideas tab fills up.
@@ -421,7 +419,7 @@ function ClaudePanel() {
       </div>
       <div className="text-center">
         <span className="inline-block px-3 py-1 rounded-full text-[12px] font-medium" style={{ background: 'rgba(217,119,87,0.16)', color: '#E8A48C' }}>MCP coming soon</span>
-        <h2 className="story-title mt-4 text-balance">Chumoku in Claude.</h2>
+        <h2 className="display mt-4 text-balance" style={{ color: 'var(--text)' }}>Chumoku in Claude.</h2>
       </div>
       <div className="max-w-lg mx-auto mt-9 space-y-3.5">
         <p className="ml-auto w-fit px-4 py-2 rounded-[var(--r-sm)] text-[14px]" style={{ background: 'rgba(255,255,255,0.09)', color: 'var(--text)' }}>
@@ -435,11 +433,40 @@ function ClaudePanel() {
           ))}
         </div>
         <p className="text-[15px] leading-relaxed" style={{ color: 'var(--text)' }}>Your how-tos beat your usual by 4x. Film this one:</p>
-        <p className="px-4 py-3 text-[15.5px] font-medium rounded-[var(--r-sm)]" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+        <p className="pl-3 text-[17px] font-medium tracking-tight" style={{ borderLeft: '2px solid #D97757', color: 'var(--text)' }}>
           How to copy any viral video with AI
         </p>
       </div>
+      <McpWaitlist />
     </div>
+  );
+}
+
+function McpWaitlist() {
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+  const join = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = email.trim().toLowerCase();
+    if (!value || state === 'busy') return;
+    setState('busy');
+    const { error } = await supabase.from('mcp_waitlist').insert({ email: value });
+    // 23505: already on the list, which is what they wanted.
+    setState(!error || error.code === '23505' ? 'done' : 'error');
+  };
+  if (state === 'done') return <p className="mt-9 text-center text-[15px] font-medium" style={{ color: 'var(--text)' }}>You&apos;re on the list.</p>;
+  return (
+    <form onSubmit={join} className="max-w-lg mx-auto mt-9">
+      <div className="flex items-center gap-2 pl-4 pr-1.5 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid var(--line-strong)' }}>
+        <input type="email" required value={email} onChange={e => { setEmail(e.target.value); if (state === 'error') setState('idle'); }}
+          placeholder="Your email" aria-label="Your email" autoComplete="email"
+          className="flex-1 min-w-0 bg-transparent text-[16px] focus:outline-none placeholder:text-[var(--text-faint)]" style={{ color: 'var(--text)' }} />
+        <button type="submit" disabled={state === 'busy'} className="px-4 py-2 rounded-full text-[14px] font-semibold whitespace-nowrap flex-shrink-0 disabled:opacity-50" style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}>
+          Get notified
+        </button>
+      </div>
+      {state === 'error' && <p className="mt-2 text-center t-small" style={{ color: 'var(--danger)' }}>That did not work. Try again.</p>}
+    </form>
   );
 }
 
@@ -782,7 +809,7 @@ export function LandingPage() {
                   "AI content producer" named a category and left people asking
                   what it actually does; "script writer" was concrete and too
                   small. The workflow is the middle, and time is what it buys. */}
-              <span className="block text-balance" style={{ color: 'var(--text)' }}>Steal what already works.</span>
+              <span className="block text-balance" style={{ color: 'var(--text)' }}>It doomscrolls so you don&apos;t.</span>
             </h1>
 
             <div className="h-8 sm:h-10" />
@@ -829,7 +856,7 @@ export function LandingPage() {
 
         {/* ── The story ─────────────────────────────────────────────────────── */}
         <section className={SECTION}>
-          <LandingStory ideas={STORY} />
+          <LandingStory card={<CompetitorVideoCard item={DEMO[0]} thumb={demoThumb(DEMO[0].video_id)} readOnly onOpen={noop} onSave={noop} onDismiss={noop} />} />
         </section>
 
         {/* ── Claude ──────────────────────────────────────────────────────────
