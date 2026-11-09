@@ -294,15 +294,16 @@ export function CreditLedger() {
 // "YOU" wired to four labels, which looked generated and explained nothing.
 
 const UPLOADS = [
-  'i ranked every mob by how scary it is',
-  'the worst update minecraft ever shipped',
-  'ranking every biome by how hard it is',
-  'this seed should not exist',
-  'every boss, ranked by how unfair it is',
+  'i tried every ai editor so you dont have to',
+  'this app is lying to you',
+  'stop paying for this',
+  'the worst update they ever shipped',
+  'ranking every tool by how much it saves',
+  'nobody talks about this setting',
 ];
 const LEARNED: { k: string; v: string }[] = [
-  { k: 'Niche', v: 'Minecraft rankings' },
-  { k: 'Format', v: '30-45s, no face' },
+  { k: 'Niche', v: 'Tech commentary' },
+  { k: 'Format', v: '30-45s, to camera' },
   { k: 'Works best', v: 'a ranking you argue with' },
 ];
 

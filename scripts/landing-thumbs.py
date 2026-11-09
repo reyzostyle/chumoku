@@ -14,14 +14,15 @@ from PIL import Image
 # id -> (vertical Short?, fx, fy). Vertical Shorts come back as their custom
 # thumbnail pillarboxed inside a 1280x720 maxres (405x720 in the middle).
 ITEMS = {
-  'Y1s03EY3UCk': (False, .45, .5), 'EocsE3pFnAI': (True, .5, .15), '3iUo7bnsN30': (True, .5, .5),
-  'nGPFYc6eTKw': (True, .5, .3), '2cYF74YMmGc': (False, .04, .5), 'PTd98UnJnnU': (True, .5, .5),
-  'woGWeN2vsuY': (True, .5, .4), '0JZtdAtJiyk': (True, .5, .5), 'k-JdoUmUMWo': (False, .78, .5),
+  'nYpN1D06LrM': (False, .5, .15), 'qvFEJ5ksTZc': (False, .5, .15), 'dn627jC3Kf0': (False, .5, .2),
+  'pz3UTWk4R-o': (False, .5, .25), 'woGWeN2vsuY': (False, .5, .4), 'nGPFYc6eTKw': (False, .5, .3),
+  '1d4WkrDhKfg': (False, .5, .25), 'PTd98UnJnnU': (False, .5, .3),
 }
 out_dir = 'public/landing'
 sheet = Image.new('RGB', (240*len(ITEMS), 300))
 for i, (v, (vertical, fx, fy)) in enumerate(ITEMS.items()):
-    im = Image.open(io.BytesIO(urllib.request.urlopen(f'https://i.ytimg.com/vi/{v}/maxresdefault.jpg').read())).convert('RGB')
+    # oar2 is a full vertical frame: for someone on camera the face is the cover.
+    im = Image.open(io.BytesIO(urllib.request.urlopen(f'https://i.ytimg.com/vi/{v}/oar2.jpg').read())).convert('RGB')
     w, h = im.size
     if vertical:
         cw = round(h * 9 / 16) - 12; l0 = (w - cw) // 2  # 6px inset: the blurred pillarbox bleeds into the edge

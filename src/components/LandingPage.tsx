@@ -344,58 +344,51 @@ function AuthModal({ initialMode, onClose, context }: {
 // changes shape, these are wrong, and that is the correct amount of coupling
 // for a page whose whole job is to show the app.
 
-// Real Shorts across the niches people come from - Roblox, GTA, vibe coding,
-// a founder's office vlog, Minecraft, tech - with their real numbers: each
-// multiple is the video's views over its own channel's median Short, measured
-// 2026-09-30 (yt-dlp over each channel's last 40-60 Shorts, or the Ideas
-// pool's own median where the channel is already tracked). The pitches are
+// Real Shorts from creators on camera, who are who this is for (2026-11-09,
+// was Roblox, GTA and Minecraft), with real numbers: each multiple is the
+// video's views over its own channel's median Short, from the Ideas pool. The pitches are
 // what a creator in the same niche would make of it. Nothing here is a mock
 // of a number.
 const DEMO: FeedItem[] = [
   {
-    video_id: 'Y1s03EY3UCk', channel_id: 'demo-roblox', channel_name: 'Olympus Stuff',
-    video_title: "When you go to McDonald's (meme) ROBLOX", video_views: 13_691_877, video_published_at: null,
-    outlier_score: 31, idea: { pitch: 'When you join a new server as a noob', fit: 'yes' } as FeedItem['idea'],
+    video_id: 'nYpN1D06LrM', channel_id: 'demo-0', channel_name: 'Coding with Lewis',
+    video_title: "There's a Name for People Who Paste AI Responses at You", video_views: 1_714_681, video_published_at: null,
+    outlier_score: 38, idea: { pitch: 'There\'s a name for coaches who post AI advice', fit: 'yes' } as FeedItem['idea'],
   },
   {
-    video_id: 'EocsE3pFnAI', channel_id: 'demo-gta', channel_name: 'Caylus',
-    video_title: 'gta 5 in real life..', video_views: 16_057_410, video_published_at: null,
-    outlier_score: 17, idea: { pitch: 'GTA 6 physics, but in real life', fit: 'yes' } as FeedItem['idea'],
+    video_id: 'qvFEJ5ksTZc', channel_id: 'demo-1', channel_name: 'vidIQ',
+    video_title: 'YouTube Is Adding GIFs To Comments!', video_views: 816_415, video_published_at: null,
+    outlier_score: 108, idea: { pitch: 'TikTok just changed comments and nobody noticed', fit: 'yes' } as FeedItem['idea'],
   },
   {
-    video_id: '3iUo7bnsN30', channel_id: 'demo-vibe', channel_name: 'InsiderForce',
-    video_title: 'You can now build a full APP for free.', video_views: 265_389, video_published_at: null,
-    outlier_score: 65, idea: { pitch: 'I shipped an app in one evening without writing code', fit: 'yes' } as FeedItem['idea'],
+    video_id: 'dn627jC3Kf0', channel_id: 'demo-2', channel_name: 'Cluely',
+    video_title: 'Ep 26: Cluely gets HR', video_views: 1_207_565, video_published_at: null,
+    outlier_score: 24.5, idea: { pitch: 'Ep 1: our two-person startup hires HR', fit: 'yes' } as FeedItem['idea'],
   },
   {
-    video_id: 'nGPFYc6eTKw', channel_id: 'demo-office', channel_name: 'Erik Cupsa',
-    video_title: 'Learn How To Code In 90 Days', video_views: 208_327, video_published_at: null,
-    outlier_score: 11, idea: { pitch: 'What 90 days at a startup actually taught me', fit: 'yes' } as FeedItem['idea'],
+    video_id: 'pz3UTWk4R-o', channel_id: 'demo-3', channel_name: 'Smart Nonsense',
+    video_title: "How the NFL's magic yellow line works..", video_views: 2_494_707, video_published_at: null,
+    outlier_score: 12, idea: { pitch: 'How Formula 1 shows speed on your TV', fit: 'yes' } as FeedItem['idea'],
   },
   {
-    video_id: '2cYF74YMmGc', channel_id: 'demo-minecraft', channel_name: 'Alexa Real',
-    video_title: 'how different players do MLG water bucket', video_views: 15_548_608, video_published_at: null,
-    outlier_score: 20, idea: { pitch: 'How different players build their first house', fit: 'yes' } as FeedItem['idea'],
-  },
-  {
-    video_id: 'PTd98UnJnnU', channel_id: 'demo-tech', channel_name: 'Marques Brownlee',
-    video_title: 'This TECH Knife is Insane!', video_views: 41_870_837, video_published_at: null,
-    outlier_score: 6.1, idea: { pitch: 'The $20 gadget that replaced half my desk', fit: 'yes' } as FeedItem['idea'],
-  },
-  {
-    video_id: 'woGWeN2vsuY', channel_id: 'demo-vlog', channel_name: 'Caylus',
+    video_id: 'woGWeN2vsuY', channel_id: 'demo-4', channel_name: 'Caylus',
     video_title: 'I Snuck Into MrBeasts PARTY..', video_views: 23_159_389, video_published_at: null,
     outlier_score: 24, idea: { pitch: 'I snuck into the biggest creator party in my city', fit: 'yes' } as FeedItem['idea'],
   },
   {
-    video_id: '0JZtdAtJiyk', channel_id: 'demo-ai', channel_name: 'InsiderForce',
-    video_title: 'Top 3 Claude Code Skills for Non-Designers', video_views: 451_783, video_published_at: null,
-    outlier_score: 110, idea: { pitch: '3 AI tools that make my edits look pro', fit: 'yes' } as FeedItem['idea'],
+    video_id: 'nGPFYc6eTKw', channel_id: 'demo-5', channel_name: 'Erik Cupsa',
+    video_title: 'Learn How To Code In 90 Days', video_views: 208_327, video_published_at: null,
+    outlier_score: 11, idea: { pitch: 'What 90 days at a startup actually taught me', fit: 'yes' } as FeedItem['idea'],
   },
   {
-    video_id: 'k-JdoUmUMWo', channel_id: 'demo-obby', channel_name: 'The Robloxian Baddie',
-    video_title: 'How to Do the GNARLY Obby Trend', video_views: 281_889, video_published_at: null,
-    outlier_score: 24, idea: { pitch: 'Ranking every parkour jump from easy to impossible', fit: 'yes' } as FeedItem['idea'],
+    video_id: '1d4WkrDhKfg', channel_id: 'demo-6', channel_name: 'Dan Thy FYP',
+    video_title: 'What now seriously?', video_views: 8_221_853, video_published_at: null,
+    outlier_score: 107, idea: { pitch: 'Every makeup brand after you buy from them once', fit: 'yes' } as FeedItem['idea'],
+  },
+  {
+    video_id: 'PTd98UnJnnU', channel_id: 'demo-7', channel_name: 'Marques Brownlee',
+    video_title: 'This TECH Knife is Insane!', video_views: 41_870_837, video_published_at: null,
+    outlier_score: 6.1, idea: { pitch: 'The $20 gadget that replaced half my desk', fit: 'yes' } as FeedItem['idea'],
   },
 ];
 
