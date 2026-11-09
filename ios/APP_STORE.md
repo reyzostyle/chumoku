@@ -53,7 +53,7 @@ in a dashboard.
    | `co.chumoku.app.plus.yearly` | Plus | $149 / year | 2 |
 
    In-App Purchases → Consumable `co.chumoku.app.credits50`, "50 credits",
-   $4.99. Each one needs a display name, a one-line description and a review
+   $15. Each one needs a display name, a one-line description and a review
    screenshot (the Plans screen). Prices are the web's; Apple keeps 15%.
 5. **Notifications.** App Information → App Store Server Notifications, V2,
    production and sandbox both:

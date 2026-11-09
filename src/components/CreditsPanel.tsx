@@ -16,7 +16,7 @@ import { type useUsage } from '../lib/useUsage';
 //
 // A top-up is a one-time purchase on top of the plan, not another tier, so it
 // lives here and not on the pricing grid.
-const CREDIT_PACK = { id: 'small', credits: 50, price: '$4.99' };
+const CREDIT_PACK = { id: 'small', credits: 50, price: '$15' };
 
 type Usage = ReturnType<typeof useUsage>['usage'];
 

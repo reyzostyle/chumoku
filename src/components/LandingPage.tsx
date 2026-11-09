@@ -922,9 +922,6 @@ export function LandingPage() {
                 <img src="/chumoku-mark.png" alt="" className="h-[14px] w-auto" />
                 Chumoku
               </div>
-              <p className="text-[13px] leading-relaxed mt-3 max-w-[16rem] text-pretty" style={{ color: 'var(--text-muted)' }}>
-                The Shorts workflow, automated. Less time on every Short.
-              </p>
               {/* The other half of the sameAs in index.html: those profiles link
                   back here, and rel="me" is the markup for "this is also me". */}
               <div className="flex flex-wrap gap-x-4 gap-y-2 mt-5 text-[13px]">

@@ -26,7 +26,7 @@ struct PlansView: View {
     private static let fallback: [String: Decimal] = [
         Purchases.plusMonthly: 29, Purchases.plusYearly: 149,
         Purchases.proMonthly: 49, Purchases.proYearly: 299,
-        Purchases.credits50: 4.99,
+        Purchases.credits50: 15,
     ]
 
     var body: some View {
