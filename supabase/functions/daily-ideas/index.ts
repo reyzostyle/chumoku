@@ -422,10 +422,11 @@ Deno.serve(async (req: Request) => {
       if (!cronSecret || provided !== cronSecret) return json({ error: 'Unauthorized' }, 401);
       const started = Date.now();
       const { data: users } = await supabase
-        .from('user_tokens').select('user_id, timezone, idea_drop_date')
+        .from('user_tokens').select('user_id, plan, timezone, idea_drop_date')
         .gte('idea_seen_at', new Date(Date.now() - ACTIVE_WINDOW_MS).toISOString());
       let built = 0, skipped = 0;
-      for (const u of users ?? []) {
+      // Subscribers only since 2026-11-09: no plan, no model calls.
+      for (const u of (users ?? []).filter((x: any) => x.plan && x.plan !== 'free')) {
         if (Date.now() - started > CRON_BUDGET_MS) { skipped++; continue; }
         const tz = validTz(u.timezone) ?? 'UTC';
         const dropDate = dropDateFor(tz);
@@ -466,12 +467,13 @@ Deno.serve(async (req: Request) => {
       // onboarding; these keep it from going stale.
       const WEEK = 7 * 24 * 60 * 60 * 1000;
       const { data: everyone } = await supabase
-        .from('user_tokens').select('user_id, brain_at, voice_at, access_token, channel_description');
+        .from('user_tokens').select('user_id, plan, brain_at, voice_at, access_token, channel_description');
+      const subscribers = (everyone ?? []).filter((x: any) => x.plan && x.plan !== 'free');
       const hasChannel = (u: any) => !!u.access_token;
       const due = (at: string | null) => !at || Date.now() - new Date(at).getTime() > WEEK;
 
       let brains = 0;
-      for (const u of everyone ?? []) {
+      for (const u of subscribers) {
         if (brains >= 5 || Date.now() - started > CRON_BUDGET_MS - 30_000) break;
         if (!due(u.brain_at) || (!hasChannel(u) && !u.channel_description)) continue;
         try {
@@ -486,7 +488,7 @@ Deno.serve(async (req: Request) => {
       }
 
       let voices = 0;
-      for (const u of everyone ?? []) {
+      for (const u of subscribers) {
         if (voices >= 2 || Date.now() - started > CRON_BUDGET_MS - 40_000) break;
         if (!hasChannel(u) || u.voice_at && Date.now() - new Date(u.voice_at).getTime() < VOICE_TTL_MS) continue;
         try {
@@ -513,7 +515,8 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     await ensureTokensRow(supabase, user.id);
     const { data: row } = await supabase
-      .from('user_tokens').select('timezone').eq('user_id', user.id).maybeSingle();
+      .from('user_tokens').select('timezone, plan').eq('user_id', user.id).maybeSingle();
+    if (!row?.plan || row.plan === 'free') return json({ error: 'subscription_required' }, 402);
     const tz = validTz(body.timezone) ?? validTz(row?.timezone) ?? 'UTC';
     await supabase.from('user_tokens')
       .update({ timezone: tz, idea_seen_at: new Date().toISOString() }).eq('user_id', user.id);

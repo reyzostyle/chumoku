@@ -50,7 +50,7 @@ export const CREDIT_COSTS = {
 
 // DB value → display name
 export const PLAN_DISPLAY: Record<string, string> = {
-  free: 'Trial',
+  free: 'No plan',
   pro: 'Plus',
   agency: 'Pro',
 };

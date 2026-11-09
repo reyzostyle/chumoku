@@ -308,7 +308,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             )}
             <div className="mt-auto pt-8">
               <Button variant="primary" className="w-full" disabled={saving} onClick={finish}>
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />} See today&apos;s ideas
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />} Continue
               </Button>
             </div>
           </>

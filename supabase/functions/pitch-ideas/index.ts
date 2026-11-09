@@ -39,6 +39,9 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
     if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
+    const { data: planRow } = await supabase.from('user_tokens').select('plan').eq('user_id', user.id).maybeSingle();
+    if (!planRow?.plan || planRow.plan === 'free') return json({ error: 'subscription_required' }, 402);
+
     const { videoIds } = await req.json().catch(() => ({}));
     if (!Array.isArray(videoIds) || videoIds.length === 0) return json({ error: 'videoIds required' }, 400);
     const ids = [...new Set(videoIds.filter((v: unknown) => typeof v === 'string'))].slice(0, MAX_BATCH) as string[];

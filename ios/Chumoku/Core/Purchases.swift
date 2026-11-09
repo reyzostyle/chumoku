@@ -94,7 +94,7 @@ final class Purchases {
     func refreshPlan() async {
         nonisolated struct Row: Decodable { let plan: String? }
         #if DEBUG
-        if IdeasStore.isDemo { plan = "free"; return }
+        if IdeasStore.isDemo { plan = ProcessInfo.processInfo.arguments.contains("-locked") ? "free" : "pro"; return }
         #endif
         guard let uid = try? await supabase.auth.session.user.id else { plan = nil; return }
         let row: Row? = try? await supabase.from("user_tokens").select("plan").eq("user_id", value: uid).single().execute().value

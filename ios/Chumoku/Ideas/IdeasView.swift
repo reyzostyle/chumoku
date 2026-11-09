@@ -75,17 +75,6 @@ struct IdeasView: View {
             HStack(alignment: .center) {
                 Text("Ideas").font(.tTitle).foregroundStyle(Color.text)
                 Spacer()
-                // On the free plan the daily ideas are all there is; this is
-                // where the rest is, one tap away rather than in Settings.
-                if Purchases.shared.plan == "free" {
-                    Button { Purchases.shared.showPlans = true } label: {
-                        Text("Upgrade")
-                            .font(.geist(14, .medium)).foregroundStyle(Color.bg)
-                            .padding(.horizontal, 14).frame(height: 34)
-                            .background(Capsule().fill(Color.white))
-                    }
-                    .buttonStyle(.plain)
-                }
             }
             .padding(.top, 8)
             HStack(spacing: 8) {

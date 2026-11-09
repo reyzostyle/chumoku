@@ -42,7 +42,7 @@ export function creditsLeftLine(usage: Usage): string {
   const left = Math.max(0, usage.creditsLimit - usage.creditsUsed);
   // Free has no credits since 2026-10-28, only the daily ideas (a bonus from
   // a code still shows as a number).
-  if (usage.plan === 'free') return left > 0 ? `${left} credits left` : 'Daily ideas · no credits';
+  if (usage.plan === 'free') return left > 0 ? `${left} credits left` : 'No plan';
   return `${left} credits left this month`;
 }
 
@@ -79,7 +79,7 @@ export function CreditsPanel({ usage }: { usage: Usage }) {
              style={{ width: `${100 - percent}%`, background: percent >= 90 ? 'rgb(var(--danger-rgb))' : 'var(--text)' }} />
       </div>
       <p className="mt-2 text-[12px]" style={{ color: 'var(--text-faint)' }}>
-        {isFree ? 'The free plan is the daily ideas. Scripts come with Plus (about 30 a month) or Pro (about 100).' : 'Refills with your plan every month. A script is 3, a chat message 1.'}
+        {isFree ? 'Pick a plan to get your ideas and scripts.' : 'Refills with your plan every month. A script is 3, a chat message 1.'}
       </p>
 
       {/* Top-ups are for subscribers: at the same price per credit, selling

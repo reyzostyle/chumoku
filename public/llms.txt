@@ -24,7 +24,7 @@ the script.
 ## Surfaces
 
 - Ideas: tracks channels in the creator's niche and surfaces only the Shorts
-  that clearly beat that channel's own median views. Every one is pitched, free,
+  that clearly beat that channel's own median views. Every one is pitched
   as a one-line version for the creator's channel with a note on whether it fits.
   Opening one up is a set of steps: the angle (reads the video), then an outline
   (watches it), then the script, written in Chat.
@@ -45,8 +45,6 @@ the script.
 
 ## Pricing
 
-- Free: ten new ideas every morning, no credits. Chumoku brain is free on
-  every plan.
 - Plus: $9.99 per month, or $119.99 per year. 100 credits per month, about
   30 scripts (a script, steal or video review is 3 credits, a chat message 1).
 - Pro: $19.99 per month, or $155.99 per year (an effective $12.99 per month).

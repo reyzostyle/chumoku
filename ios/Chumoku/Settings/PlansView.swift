@@ -10,6 +10,7 @@ import Supabase
 // picked at a time like a radio list, one button at the bottom, and extra
 // credits always on the page (not only once the App Store has answered).
 struct PlansView: View {
+    var embedded = false
     @Environment(AuthModel.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -87,8 +88,10 @@ struct PlansView: View {
             .safeAreaInset(edge: .bottom) { cta }
             .background(Color.bg.ignoresSafeArea())
             .toolbar {
+                if !embedded {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: { Image(systemName: "xmark") }
+                }
                 }
             }
         }

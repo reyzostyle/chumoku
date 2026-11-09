@@ -415,7 +415,7 @@ export function SettingsPage() {
   // one query behind it and arrives at once.
   const isFree = (plan ?? 'free') === 'free';
   const left = usage ? Math.max(0, usage.creditsLimit - usage.creditsUsed) : 0;
-  const planName = plan === 'agency' ? 'Pro' : plan === 'pro' ? 'Plus' : 'Trial';
+  const planName = plan === 'agency' ? 'Pro' : plan === 'pro' ? 'Plus' : 'No plan';
   const go = (tab: string) => window.dispatchEvent(new CustomEvent('chumoku:navigate', { detail: tab }));
 
   return (
@@ -430,7 +430,7 @@ export function SettingsPage() {
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-[22px] font-semibold tracking-tight" style={{ color: 'var(--text)' }}>{planName}</p>
           <p className="text-[13px] tabular-nums" style={{ color: 'var(--text-muted)' }}>
-            {usage && usage.creditsLimit > 0 ? `${left} of ${usage.creditsLimit} credits left` : 'Daily ideas only'}
+            {usage && usage.creditsLimit > 0 ? `${left} of ${usage.creditsLimit} credits left` : 'Subscribe to get ideas'}
           </p>
         </div>
         {usage && usage.creditsLimit > 0 && (

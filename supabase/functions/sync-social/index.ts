@@ -83,8 +83,12 @@ Deno.serve(async (req: Request) => {
       const { data: due } = await supabase.from('social_accounts')
         .select('user_id, platform, handle').or(`synced_at.is.null,synced_at.lt.${cutoff}`)
         .order('synced_at', { ascending: true, nullsFirst: true }).limit(200);
+      // Paid requests, so subscribers only.
+      const { data: paid } = await supabase.from('user_tokens').select('user_id').neq('plan', 'free')
+        .in('user_id', [...new Set((due ?? []).map((a: any) => a.user_id))]);
+      const subscribed = new Set((paid ?? []).map((p: any) => p.user_id));
       let done = 0;
-      for (const a of due ?? []) {
+      for (const a of (due ?? []).filter((x: any) => subscribed.has(x.user_id))) {
         if (Date.now() - started > CRON_BUDGET_MS) break;
         try {
           await readVideos(supabase, a.user_id, a.platform, a.handle, 1);

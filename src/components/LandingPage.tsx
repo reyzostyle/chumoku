@@ -506,7 +506,7 @@ const pricingPlans: Plan[] = [
     // one line that separates paid from the free trial (enforced server-side
     // in fetch-competitor-ideas / generate-outline, not just hidden in the UI).
     quotas: ['About 30 scripts a month', '5 tracked channels', '100 credits'],
-    features: ['Your version of every idea, free', 'Scripts written for your channel', 'Steal and Ask on every Short'],
+    features: ['Your version of every idea', 'Scripts written for your channel', 'Steal and Ask on every Short'],
     cta: 'Get Plus', highlight: false,
   },
   {

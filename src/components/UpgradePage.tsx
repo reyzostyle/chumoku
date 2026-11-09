@@ -44,7 +44,7 @@ const plans: Plan[] = [
     // more, so nothing here promises either.
     quotas: ['About 30 scripts / month', '100 credits: 3 a script, 1 a message', 'Ideas pitched for your channel'],
     features: [
-      'Your version of every idea, free',
+      'Your version of every idea',
       'A script from any idea in one press',
       'A chat that knows your channel',
       'Retention read on your own videos',

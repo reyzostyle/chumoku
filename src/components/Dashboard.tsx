@@ -12,6 +12,7 @@ import { PartnersAdminPage } from './PartnersAdminPage';
 import { CompetitorsPage } from './CompetitorsPage';
 import { AdminPage } from './AdminPage';
 import { ShareChooser } from './ShareChooser';
+import { useUsage } from '../lib/useUsage';
 import { peek, take, PENDING_ANALYZE_KEY, PENDING_STEAL_KEY, PENDING_SHARE_KEY, OPEN_RETENTION_KEY } from '../lib/intents';
 
 // Loaded on first open: the editor pulls in a video decoder/encoder that no
@@ -32,6 +33,8 @@ const RETIRED_TABS: Record<string, NavTab> = { projects: 'saved', analytics: 'se
 const isTabReachable = (t: string): t is NavTab =>
   (VALID_TABS as string[]).includes(t) && !HIDDEN_TABS.includes(t as NavTab);
 
+const OPEN_WITHOUT_PLAN: NavTab[] = ['upgrade', 'settings', 'partners', 'admin', 'affiliate-admin'];
+
 export function Dashboard() {
   const { user } = useAuth();
   const isOwner = user?.email === OWNER_EMAIL;
@@ -51,6 +54,21 @@ export function Dashboard() {
 
   // A link shared from a phone arrives without saying what it is for.
   const [shared, setShared] = useState<string | null>(() => take(PENDING_SHARE_KEY));
+
+  // Subscribers only since 2026-11-09. Without a plan: the plans, and Settings
+  // for signing out or deleting the account. Nothing renders until the plan is
+  // known, or Ideas would flash and ask the server for a drop.
+  const { usage, loading: usageLoading, reload: reloadUsage } = useUsage();
+  const locked = usage?.plan === 'free';
+  const tab: NavTab = locked && !OPEN_WITHOUT_PLAN.includes(activeTab) ? 'upgrade' : activeTab;
+
+  // Back from Stripe the webhook can still be on its way.
+  useEffect(() => {
+    if (!locked || !new URLSearchParams(window.location.search).get('checkout')) return;
+    const t = setInterval(reloadUsage, 2000);
+    const stop = setTimeout(() => clearInterval(t), 30_000);
+    return () => { clearInterval(t); clearTimeout(stop); };
+  }, [locked, reloadUsage]);
   const chooseShared = (action: 'analyze' | 'steal') => {
     if (!shared) return;
     localStorage.setItem(action === 'analyze' ? PENDING_ANALYZE_KEY : PENDING_STEAL_KEY, shared);
@@ -92,19 +110,21 @@ export function Dashboard() {
   }, []);
 
   return (
-    <AppShell activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'home' && <HomePage onNavigate={setActiveTab} />}
-      {activeTab === 'analyze' && <AnalysisChat />}
-      {activeTab === 'saved' && <SavedPage />}
-      {activeTab === 'retention' && <RetentionPage />}
-      {activeTab === 'edit' && isOwner && <Suspense fallback={null}><EditPage /></Suspense>}
-      {activeTab === 'competitors' && <CompetitorsPage />}
-      {activeTab === 'upgrade' && <UpgradePage />}
-      {activeTab === 'partners' && <PartnersPage />}
-      {activeTab === 'affiliate-admin' && <PartnersAdminPage />}
-      {activeTab === 'settings' && <SettingsPage />}
-      {activeTab === 'admin' && <AdminPage />}
+    <AppShell activeTab={tab} onTabChange={setActiveTab}>
+      {(usage || !usageLoading) && <>
+      {tab === 'home' && <HomePage onNavigate={setActiveTab} />}
+      {tab === 'analyze' && <AnalysisChat />}
+      {tab === 'saved' && <SavedPage />}
+      {tab === 'retention' && <RetentionPage />}
+      {tab === 'edit' && isOwner && <Suspense fallback={null}><EditPage /></Suspense>}
+      {tab === 'competitors' && <CompetitorsPage />}
+      {tab === 'upgrade' && <UpgradePage />}
+      {tab === 'partners' && <PartnersPage />}
+      {tab === 'affiliate-admin' && <PartnersAdminPage />}
+      {tab === 'settings' && <SettingsPage />}
+      {tab === 'admin' && <AdminPage />}
       {shared && <ShareChooser url={shared} onChoose={chooseShared} onClose={() => setShared(null)} />}
+      </>}
     </AppShell>
   );
 }

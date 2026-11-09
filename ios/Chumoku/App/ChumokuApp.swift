@@ -85,15 +85,21 @@ struct SignedInRoot: View {
 struct MainTabs: View {
     @Environment(NotesStore.self) private var notes
     @Environment(ChatStore.self) private var chat
-    enum T: Hashable { case ideas, chat, saved, create, edit, analytics, settings }
+    enum T: Hashable { case ideas, chat, saved, create, edit, analytics, settings, plans }
     @State private var tab: T = .ideas
+    // Subscribers only since 2026-11-09. Settings stays open for signing out and deleting the account.
+    private var locked: Bool { Purchases.shared.plan == "free" }
 
     var body: some View {
         TabView(selection: $tab) {
-            Tab("Ideas", image: "TabIdeas", value: T.ideas) { IdeasView() }
-            Tab("Chat", image: "TabChat", value: T.chat) { ChatView() }
-            Tab("Saved", image: "TabSaved", value: T.saved) { SavedView() }
-            if Features.filming {
+            if locked {
+                Tab("Plans", image: "TabPlans", value: T.plans) { PlansView(embedded: true) }
+            } else {
+                Tab("Ideas", image: "TabIdeas", value: T.ideas) { IdeasView() }
+                Tab("Chat", image: "TabChat", value: T.chat) { ChatView() }
+                Tab("Saved", image: "TabSaved", value: T.saved) { SavedView() }
+            }
+            if Features.filming && !locked {
                 Tab("Edit", systemImage: "scissors", value: T.edit) { EditHome() }
                 Tab("Create", systemImage: "plus", value: T.create) { FilmHome() }
                 Tab("Analytics", systemImage: "chart.bar", value: T.analytics) { AnalyticsView() }
@@ -101,6 +107,9 @@ struct MainTabs: View {
             Tab("Settings", image: "TabSettings", value: T.settings) { SettingsView() }
         }
         .sensoryFeedback(.selection, trigger: tab)
+        .onChange(of: locked, initial: true) { _, now in
+            if now { if tab != .settings { tab = .plans } } else if tab == .plans { tab = .ideas }
+        }
         // "Record an idea" from Siri or the Lock Screen lands in Notes.
         .onChange(of: notes.recordNow) { _, now in if now { tab = .ideas } }
         // An idea sent to Chat ("Work on it in Chat") brings Chat forward.

@@ -126,7 +126,7 @@ struct OnboardingView: View {
             Button { Task { await finish() } } label: {
                 HStack(spacing: 8) {
                     if finishing { ProgressView().controlSize(.small).tint(Color.bg) }
-                    Text("See today's ideas")
+                    Text("Continue")
                 }
             }
             .buttonStyle(.pill)

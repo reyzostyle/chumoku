@@ -17,8 +17,8 @@ export const FAQS: { q: string; a: string }[] = [
     a: 'It finds Shorts blowing up in your niche and rebuilds them for your channel: your version of the idea, an outline, then the script.',
   },
   {
-    q: 'Is it free to try?',
-    a: 'The daily ideas are free: ten new ones every morning. Scripts and the chat run on credits: Plus is about 30 scripts a month, Pro about 100. A script or a steal costs 3 credits, a chat message 1.',
+    q: 'Is there a free plan?',
+    a: 'No. Plus is ten new ideas every morning and about 30 scripts a month, Pro about 100. A script or a steal costs 3 credits, a chat message 1.',
   },
   {
     q: 'Do I need to connect YouTube?',
@@ -34,7 +34,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How does it find ideas?',
-    a: 'It shows only Shorts that beat their own channel\'s usual views, each pitched as your version for free. A script costs 3 credits.',
+    a: 'It shows only Shorts that beat their own channel\'s usual views, each pitched as your version. A script costs 3 credits.',
   },
   {
     q: 'What is Chumoku brain?',

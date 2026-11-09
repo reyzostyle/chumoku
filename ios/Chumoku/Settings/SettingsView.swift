@@ -38,9 +38,9 @@ nonisolated struct Account: Decodable {
 
     // Mirrors src/lib/useUsage.ts (free 0, Plus 100, Pro 300 since 2026-10-28).
     static let limits = ["free": 0, "pro": 100, "agency": 300]
-    static var names: [String: String] { ["free": String(localized: "Trial"), "pro": "Plus", "agency": "Pro"] }
+    static var names: [String: String] { ["free": String(localized: "No plan"), "pro": "Plus", "agency": "Pro"] }
 
-    var planName: String { Self.names[plan ?? "free"] ?? String(localized: "Trial") }
+    var planName: String { Self.names[plan ?? "free"] ?? String(localized: "No plan") }
     var creditLimit: Int { (Self.limits[plan ?? "free"] ?? 20) + (bonusCredits ?? 0) }
     var creditsLeft: Int { max(0, creditLimit - (creditsUsed ?? 0)) }
     var youtubeConnected: Bool { !(accessToken ?? "").isEmpty }
@@ -254,10 +254,10 @@ struct SettingsView: View {
         let free = (account?.plan ?? "free") == "free"
         return VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
-                Text(verbatim: account?.planName ?? (loading ? " " : String(localized: "Trial")))
+                Text(verbatim: account?.planName ?? (loading ? " " : String(localized: "No plan")))
                     .font(.tHeading).foregroundStyle(Color.text)
                 Spacer()
-                Text(account.map { $0.creditLimit == 0 ? String(localized: "Daily ideas only") : String(localized: "\($0.creditsLeft) of \($0.creditLimit) left") } ?? " ")
+                Text(account.map { $0.creditLimit == 0 ? String(localized: "Subscribe to get ideas") : String(localized: "\($0.creditsLeft) of \($0.creditLimit) left") } ?? " ")
                     .font(.tSmall).foregroundStyle(Color.textMuted).monospacedDigit()
             }
             if let a = account, a.creditLimit > 0 {
