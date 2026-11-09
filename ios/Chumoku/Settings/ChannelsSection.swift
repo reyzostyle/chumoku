@@ -36,7 +36,7 @@ struct ChannelsSection: View {
     @State private var removing: String?
     @State private var error: String?
 
-    private var limit: Int { (plan ?? "free") == "free" ? 3 : 5 }
+    private var limit: Int { plan == "agency" ? 10 : (plan ?? "free") == "free" ? 3 : 5 }
 
     var body: some View {
         VStack(spacing: 0) {

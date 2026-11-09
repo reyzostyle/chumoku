@@ -112,9 +112,9 @@ export function render(): PrerenderRoute[] {
       // is the sentence an answer engine lifts when asked what Chumoku is. Keep
       // it under ~155 characters, Google cut the longer one mid-sentence.
       path: '/',
-      title: 'Chumoku - Steal viral Shorts ideas for your YouTube channel',
+      title: 'Chumoku - Steal viral ideas for your Shorts, TikToks and Reels',
       description:
-        "Chumoku finds the YouTube Shorts blowing up in your niche and turns each one into your idea, outline and script. Never wonder what to post next.",
+        "Chumoku finds the Shorts, TikToks and Reels blowing up in your niche and turns each one into your idea, outline and script. Never wonder what to post next.",
       html: wrap(<LandingPage />),
     },
     {

@@ -52,7 +52,7 @@ export function CompetitorsChannels({
           <span className="min-w-0">
             <span className="block text-[13px] font-medium" style={{ color: 'var(--text)' }}>Find competitors for me</span>
             <span className="block text-[11px]" style={{ color: 'var(--text-faint)' }}>
-              {channels.length >= channelLimit ? 'All five slots are taken' : 'Reads your uploads and looks for who is winning on the same subject'}
+              {channels.length >= channelLimit ? 'All your slots are taken' : 'Reads your uploads and looks for who is winning on the same subject'}
             </span>
           </span>
         </button>

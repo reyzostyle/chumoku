@@ -34,7 +34,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How does it find ideas?',
-    a: 'It shows only Shorts that beat their own channel\'s usual views, each pitched as your version for free. Opening one up costs a credit.',
+    a: 'It shows only Shorts that beat their own channel\'s usual views, each pitched as your version for free. A script costs 3 credits.',
   },
   {
     q: 'What is Chumoku brain?',

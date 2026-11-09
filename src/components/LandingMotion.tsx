@@ -60,15 +60,12 @@ function enter(inView: boolean | null, i = 0, base = 0): React.CSSProperties {
 // on its second line.
 
 export function Head({ eyebrow, title, muted, id }: {
-  eyebrow: string; title: string; muted?: string; id?: string;
+  eyebrow?: string; title: string; muted?: string; id?: string;
 }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.3);
   return (
     <div ref={ref} id={id} className="pt-8 sm:pt-10 mb-10 sm:mb-12 scroll-mt-16" style={{ borderTop: '1px solid var(--line)' }}>
-      <p className="label-mono mb-5 flex items-center gap-2" style={enter(inView)}>
-        <span className="inline-block w-1 h-1 rounded-full" style={{ background: 'var(--text-faint)' }} />
-        {eyebrow}
-      </p>
+      {eyebrow && <p className="label-mono mb-5" style={enter(inView)}>{eyebrow}</p>}
       <h2 className="display text-balance" style={{ ...enter(inView, 1), color: 'var(--text)' }}>
         {title}
         {muted && <span style={{ color: 'var(--text-muted)' }}> {muted}</span>}
@@ -206,7 +203,7 @@ const STEPS: { n: string; title: string; Tile: (p: { inView: boolean | null }) =
   // shows, and Ivan's rule (2026-09-30) is that nothing on the page describes
   // what is on the page.
   { n: '01', title: 'Find what is blowing up', Tile: FindTile },
-  { n: '02', title: 'Steal it on YouTube', Tile: StealTile },
+  { n: '02', title: 'Steal any Short', Tile: StealTile },
   { n: '03', title: 'Unlock your version', Tile: UnlockTile },
   { n: '04', title: 'Get the script', Tile: ChatTile },
 ];
@@ -228,62 +225,6 @@ function Step({ n, title, Tile: T }: (typeof STEPS)[number]) {
         <span className="text-[12px] tabular-nums pt-0.5" style={{ color: 'var(--text-faint)' }}>{n}</span>
         {title}
       </p>
-    </div>
-  );
-}
-
-// ─── Credits, as a ledger ────────────────────────────────────────────────────
-// What a month of using it looks like: a few ordinary actions come in one at a
-// time and the balance ticks down with each. It replaced a big "1 credit" with
-// cards floating around it, which read as a template rather than as the app.
-
-const LEDGER: { what: string; cost: number }[] = [
-  { what: 'Wrote a script from a saved idea', cost: 1 },
-  { what: 'Revealed an angle', cost: 1 },
-  { what: 'Stole a format on YouTube', cost: 5 },
-  { what: 'Asked why a Short flopped', cost: 1 },
-];
-const START = 300;
-
-export function CreditLedger() {
-  const { ref, inView } = useInView<HTMLDivElement>(0.35);
-  // How many rows have landed. On the server and without motion: all of them.
-  const [shown, setShown] = useState(LEDGER.length);
-  useEffect(() => {
-    if (inView === false) { setShown(0); return; }
-    if (inView !== true || prefersReducedMotion()) { setShown(LEDGER.length); return; }
-    setShown(0);
-    const timers = LEDGER.map((_, i) => setTimeout(() => setShown(i + 1), 450 + i * 650));
-    return () => timers.forEach(clearTimeout);
-  }, [inView]);
-  const balance = START - LEDGER.slice(0, shown).reduce((a, r) => a + r.cost, 0);
-
-  return (
-    <div ref={ref} className="grid md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] overflow-hidden"
-         style={{ background: 'var(--bg-raised)', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)' }}>
-      <div className="p-6 sm:p-8 flex flex-col justify-between gap-6 md:border-r" style={{ borderColor: 'var(--line)' }}>
-        <p className="label-mono">Plus · this month</p>
-        <div>
-          <p className="font-semibold tabular-nums leading-none" style={{ color: 'var(--text)', fontSize: 'clamp(3rem, 2rem + 4vw, 4.5rem)', letterSpacing: '-0.045em' }}>
-            {balance}
-          </p>
-          <p className="text-[13px] mt-2" style={{ color: 'var(--text-muted)' }}>credits left</p>
-        </div>
-      </div>
-      <div className="p-3 sm:p-4 border-t md:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        {LEDGER.map((r, i) => (
-          <div key={r.what} className="flex items-center justify-between gap-4 px-3 py-3"
-               style={{
-                 opacity: i < shown ? 1 : 0,
-                 transform: i < shown ? 'none' : 'translateY(6px)',
-                 transition: 'opacity 0.45s ease, transform 0.45s cubic-bezier(.2,.7,.2,1)',
-                 borderBottom: i < LEDGER.length - 1 ? '1px solid var(--line)' : undefined,
-               }}>
-            <span className="text-[13.5px] truncate" style={{ color: 'var(--text)' }}>{r.what}</span>
-            <span className="font-mono text-[12px] tabular-nums flex-shrink-0" style={{ color: 'var(--text-muted)' }}>−{r.cost}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

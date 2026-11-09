@@ -19,7 +19,7 @@ export function ChannelsSettings() {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [syncingChannelId, setSyncingChannelId] = useState<string | null>(null);
   const [findOpen, setFindOpen] = useState(false);
-  const channelLimit = plan === 'free' ? 3 : 5;
+  const channelLimit = plan === 'free' ? 3 : plan === 'agency' ? 10 : 5;
 
   const load = useCallback(async () => {
     const userId = await getUserId();

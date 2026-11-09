@@ -138,7 +138,7 @@ Deno.serve(async (req: Request) => {
     const { data: planRow } = await supabase
       .from('user_tokens').select('plan').eq('user_id', userId).maybeSingle();
     const userPlan = planRow?.plan || 'free';
-    const channelLimit = userPlan === 'free' ? 3 : 5;
+    const channelLimit = userPlan === 'free' ? 3 : userPlan === 'agency' ? 10 : 5;
 
     const { channelUrl } = await req.json();
     if (!channelUrl) {
@@ -157,7 +157,7 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           error: userPlan === 'free'
             ? 'Free accounts can track 3 competitor channels. Upgrade to track 5, or remove one to add another.'
-            : 'You can track up to 5 competitor channels. Remove one to add another.',
+            : `You can track up to ${channelLimit} competitor channels. Remove one to add another.`,
           plan_required: userPlan === 'free' ? 'plus' : undefined,
         }),
         { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } }

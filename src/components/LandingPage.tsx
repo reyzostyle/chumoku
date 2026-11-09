@@ -6,7 +6,6 @@ import {
   AltArrowRightOutlineIcon as ChevronRight,
   AltArrowDownOutlineIcon as ChevronDown,
   ArrowUpOutlineIcon as ArrowUp,
-  ArrowRightUpOutlineIcon as ArrowUpRight,
   LetterOutlineIcon as Mail,
   HamburgerMenuOutlineIcon as Menu,
 } from '@solar-icons/react';
@@ -22,7 +21,7 @@ import { CompetitorVideoCard } from './CompetitorVideoCard';
 import { BillingSeg } from './BillingSeg';
 import { Collapse } from './Page';
 import type { FeedItem } from '../lib/competitors';
-import { Head, WorkflowGrid, CreditLedger, BrainScan } from './LandingMotion';
+import { Head, WorkflowGrid, BrainScan } from './LandingMotion';
 
 // ─── Surface ─────────────────────────────────────────────────────────────────
 // This page used to run on three bespoke `glass` objects: stacked white
@@ -59,17 +58,6 @@ const inputReset: React.CSSProperties = {
 // product land on the same place. Sections used to run at max-w-4xl with px-6
 // while the app ran max-w-5xl with px-5/px-8.
 const SECTION = 'w-full max-w-5xl mx-auto px-5 sm:px-8';
-
-// The icon set has no brand marks, so the real Discord glyph is inlined here
-// (official logo path, viewBox 0 0 24 24) rather than standing in with a
-// generic chat-bubble icon.
-function DiscordIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} style={style} aria-hidden="true">
-      <path d="M20.317 4.369a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.009c.12.099.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.331c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.418 2.157-2.418 1.21 0 2.176 1.094 2.157 2.418 0 1.334-.956 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.21 0 2.176 1.094 2.157 2.418 0 1.334-.946 2.419-2.157 2.419z" />
-    </svg>
-  );
-}
 
 function GoogleMark() {
   return (
@@ -396,26 +384,6 @@ const DEMO: FeedItem[] = [
 // the resolution of YouTube's hqdefault after cropping, with the text on them.
 const demoThumb = (id: string) => `/landing/${id}.webp`;
 
-// Verbatim Discord messages, quoted as such. One per surface, so each lands on
-// a different problem rather than three people praising the same thing.
-const testimonials: { quote: string; name: string; on: string }[] = [
-  {
-    quote: 'added 4 competitors yesterday and the tool literally picked out the exact 2 shorts that blew up on their channels lol',
-    name: 'alexvfx',
-    on: 'Ideas',
-  },
-  {
-    quote: 're-wrote the first 5 seconds based on the prompt, retention actually stayed flat through the intro',
-    name: 'Yonatan',
-    on: 'Chat',
-  },
-  {
-    quote: 'figured out people were swiping away right when I started doing the sponsor plug... that graph read is insane',
-    name: 'd4wki',
-    on: 'Chat',
-  },
-];
-
 const noop = () => {};
 
 // Under the field: real ideas drifting past, the way the Ideas tab fills up.
@@ -446,6 +414,27 @@ function IdeasGrid() {
           <CompetitorVideoCard item={item} thumb={demoThumb(item.video_id)} readOnly onOpen={noop} onSave={noop} onDismiss={noop} />
         </Reveal>
       ))}
+    </div>
+  );
+}
+
+// A sample conversation: what a connected Claude would do with one question.
+function ClaudeDemo() {
+  return (
+    <div className="p-5 sm:p-6 space-y-4 max-w-2xl mx-auto" style={plate}>
+      <p className="ml-auto w-fit px-4 py-2 rounded-[var(--r-sm)] text-[14px]" style={{ background: 'var(--bg-raised-hover)', color: 'var(--text)' }}>
+        What should I film tomorrow?
+      </p>
+      <div className="space-y-1">
+        <p className="label-mono">Chumoku · read your last 30 videos</p>
+        <p className="label-mono">Chumoku · found today&apos;s ideas</p>
+      </div>
+      <p className="text-[14.5px] leading-relaxed" style={{ color: 'var(--text)' }}>
+        Your how-tos are beating your usual by 4x, and your opinion videos are under it. Film this one:
+      </p>
+      <p className="px-4 py-3 text-[15px] font-medium" style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-sm)', color: 'var(--text)' }}>
+        How to copy any viral video with AI
+      </p>
     </div>
   );
 }
@@ -497,10 +486,6 @@ interface Plan {
   yearlyMonthlyPrice: number;
   yearlyTotal: number;
   quotas: string[];
-  // What the credit number actually converts to, spent one way at a time.
-  // Only set where a concrete number is honest to show (Pro's ceiling is a
-  // fair-use number that's deliberately not on this page, see credits.ts).
-  breakdown?: { amount: string; label: string }[];
   features: string[];
   cta: string;
   highlight: boolean;
@@ -509,10 +494,6 @@ interface Plan {
 // Mirrors UpgradePage.tsx's live Stripe prices. yearlyTotal is 12x the
 // monthly rate rounded up 11c to end in .99 (Plus has no further discount
 // on top of that; Pro's yearlyMonthlyPrice is the real ~35% cut).
-// breakdown amounts are 300 credits divided by each action's real cost in
-// supabase/functions/_shared/credits.ts (video 5, hook 1, script 1,
-// competitor items 1) — i.e. what the credits buy if spent entirely on
-// that one thing, not an average. Keep in sync if CREDIT_COSTS changes.
 const pricingPlans: Plan[] = [
   {
     name: 'Plus', monthlyPrice: 9.99, yearlyMonthlyPrice: 9.99, yearlyTotal: 119.99,
@@ -520,23 +501,13 @@ const pricingPlans: Plan[] = [
     // render as the bold rows and features as the ticked ones, and this is the
     // one line that separates paid from the free trial (enforced server-side
     // in fetch-competitor-ideas / generate-outline, not just hidden in the UI).
-    quotas: ['About 30 scripts a month', '5 tracked channels'],
-    breakdown: [
-      { amount: '100', label: 'credits' },
-      { amount: '3', label: 'a script' },
-      { amount: '1', label: 'a chat message' },
-    ],
+    quotas: ['About 30 scripts a month', '5 tracked channels', '100 credits'],
     features: ['Your version of every idea, free', 'Scripts written for your channel', 'Steal and Ask on every Short'],
     cta: 'Get Plus', highlight: false,
   },
   {
     name: 'Pro', monthlyPrice: 19.99, yearlyMonthlyPrice: 12.99, yearlyTotal: 155.99,
-    quotas: ['About 100 scripts a month', '5 tracked channels'],
-    breakdown: [
-      { amount: '300', label: 'credits' },
-      { amount: '3', label: 'a script' },
-      { amount: '1', label: 'a chat message' },
-    ],
+    quotas: ['About 100 scripts a month', '10 tracked channels', '300 credits'],
     features: ['Everything in Plus', 'For posting every day'],
     cta: 'Get Pro', highlight: true,
   },
@@ -588,22 +559,6 @@ function PricingCard({ plan, interval, onSelect }: { plan: Plan; interval: Inter
           <p key={q} className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>{q}</p>
         ))}
       </div>
-
-      {/* Converts the credit number into what people came here to check: how
-          many videos, hooks, scripts that gets them. Each figure is 300
-          credits spent entirely on that one action, so this is the floor if
-          you split them, not an average. Three columns, hardcoded: Tailwind
-          cannot see a class name built at runtime. */}
-      {plan.breakdown && (
-        <div className="grid grid-cols-3 gap-px mb-5 overflow-hidden" style={{ background: 'var(--line)', border: '1px solid var(--line)', borderRadius: 'var(--r-sm)' }}>
-          {plan.breakdown.map(b => (
-            <div key={b.label} className="px-2 py-2.5 text-center" style={{ background: 'var(--bg-raised)' }}>
-              <span className="block font-mono text-[13px] tabular-nums" style={{ color: 'var(--text)' }}>{b.amount}</span>
-              <span className="block text-[10px] mt-0.5" style={{ color: 'var(--text-faint)' }}>{b.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
 
       {plan.features.length > 2 && (
         <button
@@ -874,26 +829,14 @@ export function LandingPage() {
         <section className={`${SECTION} pt-8 pb-16 sm:pb-24`}>
           <Head
             id="product"
-            eyebrow="How it works"
             title="Four steps."
           />
           <WorkflowGrid />
         </section>
 
-        {/* ── Showcase ───────────────────────────────────────────────────────── */}
-        <section className={`${SECTION} pb-16 sm:pb-24`}>
-          <Head
-            eyebrow="Credits"
-            title="One balance."
-            muted="Pay for what you use."
-          />
-          <CreditLedger />
-        </section>
-
         {/* ── Competitors ─────────────────────────────────────────────────── */}
         <section className={`${SECTION} pb-16 sm:pb-24`}>
           <Head
-            eyebrow="Ideas"
             title="Your version,"
             muted="not their title."
           />
@@ -906,29 +849,17 @@ export function LandingPage() {
             the tool does not know the channel. */}
         <section className={`${SECTION} pb-16 sm:pb-24`}>
           <Head
-            eyebrow="Chumoku brain"
             title="It learns your channel."
           />
           <BrainScan />
         </section>
 
-        {/* ── Proof ───────────────────────────────────────────────────────── */}
+        {/* ── Claude ──────────────────────────────────────────────────────────
+            Not built yet, so it says so. Ideas, scripts and channel data only:
+            nothing about making video here (Everygen contract, clause 6). */}
         <section className={`${SECTION} pb-16 sm:pb-24`}>
-          <Head eyebrow="From the Discord" title="Real messages." />
-          <div className="grid sm:grid-cols-3 gap-3 sm:gap-4">
-            {testimonials.map((t, i) => (
-              <Reveal key={t.name} delay={i * 70}>
-                <div className="p-5 h-full flex flex-col" style={plate}>
-                  <p className="text-[13.5px] leading-relaxed flex-1" style={{ color: 'var(--text)' }}>&ldquo;{t.quote}&rdquo;</p>
-                  <div className="flex items-center gap-2 mt-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
-                    <DiscordIcon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-faint)' }} />
-                    <span className="text-[12.5px]" style={{ color: 'var(--text-muted)' }}>{t.name}</span>
-                    <span className="label-mono ml-auto">{t.on}</span>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <Head eyebrow="Coming soon" title="Your channel," muted="inside Claude." />
+          <Reveal><ClaudeDemo /></Reveal>
         </section>
 
         {/* ── Pricing ─────────────────────────────────────────────────────── */}
@@ -936,12 +867,8 @@ export function LandingPage() {
           <Reveal>
             <div className="flex flex-wrap items-end justify-between gap-4 mb-10 sm:mb-14 pt-8 sm:pt-10" style={{ borderTop: '1px solid var(--line)' }}>
               <div>
-                <p className="label-mono mb-5 flex items-center gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full" style={{ background: 'var(--text-faint)' }} />
-                  Pricing
-                </p>
                 <h2 className="display" style={{ color: 'var(--text)' }}>
-                  Pays for itself<span style={{ color: 'var(--text-muted)' }}> in time saved.</span>
+                  Pays for itself<br className="sm:hidden" /><span style={{ color: 'var(--text-muted)' }}> in time saved.</span>
                 </h2>
               </div>
               <BillingToggle interval={billingInterval} onChange={setBillingInterval} />
@@ -974,40 +901,23 @@ export function LandingPage() {
 
         {/* ── FAQ ─────────────────────────────────────────────────────────── */}
         <section id="faq" className={`${SECTION} pb-16 sm:pb-24 scroll-mt-16`}>
-          <Head eyebrow="Questions" title="Everything people ask." />
+          <Head title="Everything people ask." />
           <Reveal delay={60}><FAQSection /></Reveal>
         </section>
 
         {/* ── Close ───────────────────────────────────────────────────────── */}
         <section className={`${SECTION} pb-16 sm:pb-24`}>
           <Reveal>
-            <div className="p-8 sm:p-12" style={plate}>
-              <p className="label-mono mb-4">Start</p>
-              <h2 className="display max-w-lg mb-3" style={{ color: 'var(--text)' }}>Start with your next short.</h2>
-              <p className="text-[15px] leading-relaxed max-w-md mb-7 text-pretty" style={{ color: 'var(--text-muted)' }}>
-                Paste your last Short and see what to change in the next one.
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => setAuthModal('signup')}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 font-semibold rounded-full text-[14px] transition-opacity hover:opacity-90"
-                  style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
-                >
-                  Get started
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <a
-                  href="https://discord.com/invite/N8S6C95Ry2"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 text-[14px] transition-colors hover:text-[var(--text)]"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  Join the Discord
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </a>
-              </div>
-              <p className="label-mono mt-6">Ten new ideas every morning</p>
+            <div className="px-5 py-4 sm:px-6 flex items-center justify-between gap-4" style={plate}>
+              <h2 className="text-[17px] sm:text-[20px] font-medium tracking-tight text-balance" style={{ color: 'var(--text)' }}>Start with your next short.</h2>
+              <button
+                onClick={() => setAuthModal('signup')}
+                className="inline-flex items-center gap-1.5 px-4 py-2 font-semibold rounded-full text-[14px] whitespace-nowrap flex-shrink-0 transition-opacity hover:opacity-90"
+                style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
+              >
+                Get started
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </Reveal>
         </section>
