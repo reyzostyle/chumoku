@@ -90,15 +90,15 @@ struct MainTabs: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            Tab("Ideas", systemImage: "lightbulb", value: T.ideas) { IdeasView() }
-            Tab("Chat", systemImage: "bubble.left", value: T.chat) { ChatView() }
-            Tab("Saved", systemImage: "bookmark", value: T.saved) { SavedView() }
+            Tab("Ideas", image: "TabIdeas", value: T.ideas) { IdeasView() }
+            Tab("Chat", image: "TabChat", value: T.chat) { ChatView() }
+            Tab("Saved", image: "TabSaved", value: T.saved) { SavedView() }
             if Features.filming {
                 Tab("Edit", systemImage: "scissors", value: T.edit) { EditHome() }
                 Tab("Create", systemImage: "plus", value: T.create) { FilmHome() }
                 Tab("Analytics", systemImage: "chart.bar", value: T.analytics) { AnalyticsView() }
             }
-            Tab("Settings", systemImage: "gearshape", value: T.settings) { SettingsView() }
+            Tab("Settings", image: "TabSettings", value: T.settings) { SettingsView() }
         }
         .sensoryFeedback(.selection, trigger: tab)
         // "Record an idea" from Siri or the Lock Screen lands in Notes.
